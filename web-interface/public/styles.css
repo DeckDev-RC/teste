@@ -1,0 +1,130 @@
+#progressSection {
+  margin: 20px auto;
+  max-width: 600px;
+  padding: 20px;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.progress-container {
+  text-align: center;
+}
+
+.progress-title {
+  margin-bottom: 15px;
+  color: #333;
+  font-size: 1.2em;
+}
+
+.progress-bar {
+  width: 100%;
+  height: 20px;
+  background: #f0f0f0;
+  border-radius: 10px;
+  overflow: hidden;
+  margin-bottom: 10px;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #4CAF50, #8BC34A);
+  width: 0;
+  transition: width 0.3s ease;
+}
+
+.progress-status {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 15px;
+  color: #666;
+}
+
+.progress-details {
+  display: flex;
+  justify-content: space-around;
+  font-size: 0.9em;
+  color: #666;
+}
+
+.progress-details div {
+  padding: 5px 10px;
+  background: #f9f9f9;
+  border-radius: 4px;
+}
+
+/* Animação de pulso para o texto "Processando..." */
+@keyframes pulse {
+  0% { opacity: 1; }
+  50% { opacity: 0.5; }
+  100% { opacity: 1; }
+}
+
+.progress-text {
+  animation: pulse 1.5s infinite;
+}
+
+/* Estilos para o card de Status da API */
+#api-status-card {
+  border: none;
+  transition: box-shadow 0.3s ease;
+}
+
+#api-status-card:hover {
+  box-shadow: 0 5px 15px rgba(0,0,0,0.1) !important;
+}
+
+.bg-gradient-primary {
+  background: linear-gradient(135deg, #4a6bff, #2541b2);
+}
+
+.api-status-icon i {
+  font-size: 12px;
+  vertical-align: middle;
+}
+
+.stat-item {
+  padding: 6px 0;
+  border-bottom: 1px solid rgba(0,0,0,0.05);
+}
+
+.stat-item:last-child {
+  border-bottom: none;
+}
+
+.stat-label {
+  color: #6c757d;
+  font-size: 0.9rem;
+}
+
+.stat-value {
+  font-weight: 500;
+}
+
+/* Animações para ícones e texto de status */
+@keyframes pulseDot {
+  0% { opacity: 0.7; }
+  50% { opacity: 1; }
+  100% { opacity: 0.7; }
+}
+
+.api-status-icon i.text-success {
+  animation: pulseDot 2s infinite;
+}
+
+.api-status-icon i.text-warning {
+  animation: pulseDot 1s infinite;
+}
+
+.refresh-stats:active {
+  transform: rotate(180deg);
+  transition: transform 0.3s ease;
+}
+
+.refresh-stats i {
+  transition: transform 0.3s ease;
+}
+
+.refresh-stats:hover i {
+  transform: rotate(90deg);
+} 

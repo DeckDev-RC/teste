@@ -1,0 +1,37 @@
+{
+  "name": "leitor-de-foto",
+  "version": "1.0.0",
+  "description": "Aplicativo para análise de imagens e PDFs com IA - Web",
+  "homepage": "./",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js",
+    "web": "node web-interface/server.js",
+    "web-dev": "node --watch web-interface/server.js",
+    "web-build": "echo 'Build step for web interface'",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "gemini",
+    "ai",
+    "google",
+    "api",
+    "web"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@google/generative-ai": "^0.24.1",
+    "archiver": "^7.0.1",
+    "cors": "^2.8.5",
+    "dotenv": "^16.6.1",
+    "express": "^4.18.2",
+    "express-session": "^1.18.1",
+    "multer": "^1.4.5-lts.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "cross-env": "^7.0.3"
+  }
+
+}

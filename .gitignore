@@ -1,0 +1,53 @@
+# Dependências
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Arquivos de ambiente - NUNCA commitar
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Logs
+logs
+*.log
+
+# Cache
+.cache/
+.parcel-cache/
+
+# Arquivos de sistema
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Arquivos temporários
+*.tmp
+*.temp
+temp/
+tmp/
+
+# Arquivos de backup
+*.bak
+*.backup
+
+# Arquivos de imagem para teste (opcional)
+test-images/
+sample-images/
+
+# Build output
+dist/
+build/
+
+# Coverage
+coverage/
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock 
