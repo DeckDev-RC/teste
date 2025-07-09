@@ -1,0 +1,28 @@
+# Copie este conteúdo para um arquivo .env na raiz do projeto
+
+# Configurações da API do Google Gemini
+GEMINI_API_KEY=AIzaSyC2NLqxhiLTnLhHNpzB3wVu3TyrZfxHpc4
+
+# Configurações do ambiente
+NODE_ENV=development
+
+# Instruções:
+# 1. Crie um arquivo chamado .env na raiz do projeto
+# 2. Copie o conteúdo acima para o arquivo .env
+# 3. Substitua a chave da API pela sua chave real se necessário
+# 4. Salve o arquivo
+
+# IMPORTANTE: Nunca commite o arquivo .env em repositórios públicos!
+
+# Notas sobre a API do Gemini:
+# - Este projeto usa os modelos gemini-pro e gemini-pro-vision
+# - Certifique-se de que sua chave API tem acesso aos modelos corretos
+# - Para análise de texto: gemini-pro
+# - Para análise de imagens: gemini-pro-vision
+
+# IMPORTANTE: Nunca commite o arquivo .env em repositórios públicos!
+
+# Notas sobre a API do Gemini:
+# - A partir de 12 de julho de 2024, o modelo gemini-pro-vision foi substituído por gemini-1.5-pro-vision
+# - Este projeto usa automaticamente o modelo mais recente (gemini-1.5-pro-vision)
+# - Certifique-se de que sua chave API tem acesso aos modelos mais recentes 

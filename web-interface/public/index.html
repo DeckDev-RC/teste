@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Leitor de Documentos Financeiros</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="web-integration.js"></script>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <div class="logo-container">
+                    <!-- A logo será colocada aqui quando você adicionar o arquivo -->
+                    <img src="assets/images/logo.png" alt="Logo" style="display: none;" id="logoImage">
+                    <!-- Ícone temporário enquanto não há logo -->
+                    <i class="fas fa-robot" id="logoIcon"></i>
+                </div>
+                <div>
+                    <h1>Leitor de Fotos IA</h1>
+                    <p>Análise inteligente de documentos financeiros</p>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- API Configuration Section -->
+            <section class="api-config-section" id="apiConfigSection">
+                <div class="api-config-container">
+                    <h3><i class="fas fa-key"></i> Configuração da API Gemini</h3>
+                    <div class="api-config-content">
+                        <div class="api-status" id="apiStatus">
+                            <div class="status-indicator status-error" id="statusIndicator">
+                                <i class="fas fa-times-circle"></i>
+                                <span>API não configurada</span>
+                            </div>
+                        </div>
+                        <div class="api-form">
+                            <label for="apiKeyInput">Chave API do Gemini:</label>
+                            <div class="api-input-group">
+                                <input type="password" id="apiKeyInput" placeholder="Cole sua chave API aqui..." class="api-input">
+                                <button class="toggle-visibility-btn" id="toggleVisibilityBtn" title="Mostrar/Ocultar chave">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </div>
+                            <div class="api-actions">
+                                <button class="save-api-btn btn btn-primary" id="saveApiBtn">
+                                    <i class="fas fa-save"></i>
+                                    Salvar e Configurar
+                                </button>
+                                <button class="test-api-btn btn btn-secondary" id="testApiBtn" style="display: none;">
+                                    <i class="fas fa-vial"></i>
+                                    Testar API
+                                </button>
+                            </div>
+                            <small class="api-help">
+                                <i class="fas fa-info-circle"></i>
+                                Obtenha sua chave API gratuita em: <a href="https://aistudio.google.com/app/apikey" target="_blank">Google AI Studio</a>
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Company Selection Section -->
+            <section class="company-section">
+                <div class="company-container">
+                    <h3><i class="fas fa-building"></i> Selecione a Empresa</h3>
+                    <div class="company-tabs">
+                        <button class="company-tab active" data-company="enia-marcia-joias">
+                            <i class="fas fa-gem"></i>
+                            <span>Enia Marcia Joias</span>
+                        </button>
+                        <button class="company-tab" data-company="eletromoveis">
+                            <i class="fas fa-car-battery"></i>
+                            <span>Eletromoveis</span>
+                        </button>
+                        <button class="company-tab" data-company="marcmix">
+                            <i class="fas fa-industry"></i>
+                            <span>MarcMix</span>
+                        </button>
+                        <button class="company-tab" data-company="raquel-luc">
+                            <i class="fas fa-store"></i>
+                            <span>Raquel Luc</span>
+                        </button>
+                        <button class="company-tab" data-company="fliper">
+                            <i class="fas fa-chart-line"></i>
+                            <span>Fliper</span>
+                        </button>
+                        <button class="company-tab" data-company="marcondes">
+                            <i class="fas fa-building"></i>
+                            <span>Marcondes</span>
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Upload Section -->
+            <section class="upload-section">
+                <div class="upload-container">
+                    <div class="upload-area" id="uploadArea">
+                        <div class="upload-content">
+                            <i class="fas fa-cloud-upload-alt upload-icon"></i>
+                            <h3>Arraste seus arquivos aqui</h3>
+                            <p>ou <span class="upload-button-text">clique para selecionar</span></p>
+                            <small>Suporta: Imagens (JPG, PNG, GIF, WebP, BMP) e PDFs (máx. 20MB por arquivo) - Sem limite de quantidade</small>
+                        </div>
+                        <input type="file" id="fileInput" accept="image/*,.pdf" multiple style="display: none;">
+                    </div>
+
+                    <!-- Analysis Type Selection -->
+                    <div class="analysis-options">
+                        <h4><i class="fas fa-cogs"></i> Tipo de Leitura</h4>
+                        <div class="analysis-grid">
+                            <label class="analysis-option">
+                                <input type="radio" name="analysisType" value="financial-receipt" checked>
+                                <div class="option-content">
+                                    <i class="fas fa-hand-holding-usd"></i>
+                                    <span>Contas a Receber</span>
+                                </div>
+                            </label>
+                            
+                            <label class="analysis-option">
+                                <input type="radio" name="analysisType" value="financial-payment">
+                                <div class="option-content">
+                                    <i class="fas fa-credit-card"></i>
+                                    <span>Contas a Pagar</span>
+                                </div>
+                            </label>
+                        </div>
+                        
+                        <!-- Multiple Images Toggle -->
+                        <div class="multiple-images-toggle">
+                            <label class="toggle-label">
+                                <i class="fas fa-files"></i>
+                                Analisar múltiplos arquivos
+                            </label>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="multipleImagesToggle">
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Preview Section -->
+            <section class="preview-section" id="previewSection" style="display: none;">
+                <div class="preview-container">
+                    <h3><i class="fas fa-file"></i> Preview do Arquivo</h3>
+                    <div class="image-preview">
+                        <img id="previewImage" alt="Preview">
+                        <div class="image-info">
+                            <span id="imageInfo"></span>
+                            <button class="analyze-btn btn btn-primary" id="analyzeBtn">
+                                <i class="fas fa-search"></i>
+                                Analisar Arquivo
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Multiple Images Preview Section -->
+            <section class="multiple-preview-section" id="multiplePreviewSection" style="display: none;">
+                <div class="multiple-preview-container">
+                    <h3><i class="fas fa-files"></i> Preview dos Arquivos (<span id="imageCount">0</span>)</h3>
+                    <div class="multiple-images-grid" id="multipleImagesGrid">
+                        <!-- Imagens serão inseridas aqui dinamicamente -->
+                    </div>
+                    <div class="multiple-actions">
+                        <button class="analyze-all-btn btn btn-primary" id="analyzeAllBtn">
+                            <i class="fas fa-search"></i>
+                            Analisar Todos os Arquivos
+                        </button>
+                        <button class="clear-all-btn btn btn-secondary" id="clearAllBtn">
+                            <i class="fas fa-trash"></i>
+                            Limpar Todas
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Loading Section -->
+            <section class="loading-section" id="loadingSection" style="display: none;">
+                <div class="loading-container">
+                    <div class="spinner"></div>
+                    <h3>Analisando sua imagem...</h3>
+                    <p>O Gemini AI está processando sua imagem. Isso pode levar alguns segundos.</p>
+                </div>
+            </section>
+
+            <!-- Results Section -->
+            <section class="results-section" id="resultsSection" style="display: none;">
+                <div class="results-container">
+                    <div class="results-header">
+                        <h3><i class="fas fa-lightbulb"></i> Resultado da Análise</h3>
+                        <div class="results-actions">
+                            <button class="copy-btn btn btn-primary" id="copyBtn" title="Copiar resultado">
+                                <i class="fas fa-copy"></i>
+                            </button>
+                            <button class="download-btn btn btn-success" id="downloadBtn" title="Baixar resultado">
+                                <i class="fas fa-download"></i>
+                            </button>
+                            <button class="download-renamed-btn btn btn-warning" id="downloadRenamedBtn" title="Baixar imagem renomeada">
+                                <i class="fas fa-file-signature"></i>
+                                Baixar Renomeada
+                            </button>
+                            <button class="new-analysis-btn btn btn-secondary" id="newAnalysisBtn" title="Nova análise">
+                                <i class="fas fa-plus"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="analysis-info">
+                        <span class="analysis-type-badge" id="analysisTypeBadge"></span>
+                        <span class="timestamp" id="timestamp"></span>
+                    </div>
+                    
+                    <div class="analysis-result" id="analysisResult">
+                        <!-- Resultado será inserido aqui -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- Multiple Results Section -->
+            <section class="multiple-results-section" id="multipleResultsSection" style="display: none;">
+                <div class="multiple-results-container">
+                    <div class="multiple-results-header">
+                        <h3><i class="fas fa-lightbulb"></i> Resultados das Análises (<span id="resultsCount">0</span>)</h3>
+                        <div class="multiple-results-actions">
+                            <button class="copy-all-btn btn btn-primary" id="copyAllBtn" title="Copiar todos os resultados">
+                                <i class="fas fa-copy"></i>
+                                Copiar Todos
+                            </button>
+                            <button class="download-all-btn btn btn-success" id="downloadAllBtn" title="Baixar todos os resultados">
+                                <i class="fas fa-download"></i>
+                                Baixar Todos
+                            </button>
+                            <button class="download-all-renamed-btn btn btn-warning" id="downloadAllRenamedBtn" title="Baixar ZIP com imagens renomeadas">
+                                <i class="fas fa-file-archive"></i>
+                                Baixar ZIP Renomeado
+                            </button>
+                            <button class="new-multiple-analysis-btn btn btn-secondary" id="newMultipleAnalysisBtn" title="Nova análise múltipla">
+                                <i class="fas fa-plus"></i>
+                                Nova Análise
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="multiple-analysis-info">
+                        <span class="analysis-type-badge" id="multipleAnalysisTypeBadge"></span>
+                        <span class="timestamp" id="multipleTimestamp"></span>
+                    </div>
+                    
+                    <div class="multiple-results-grid" id="multipleResultsGrid">
+                        <!-- Resultados serão inseridos aqui -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- Error Section -->
+            <section class="error-section" id="errorSection" style="display: none;">
+                <div class="error-container">
+                    <i class="fas fa-exclamation-triangle error-icon"></i>
+                    <h3>Oops! Algo deu errado</h3>
+                    <p id="errorMessage"></p>
+                    <button class="retry-btn btn btn-primary" id="retryBtn">
+                        <i class="fas fa-redo"></i>
+                        Tentar Novamente
+                    </button>
+                </div>
+            </section>
+
+            <!-- History Section -->
+            <section class="history-section">
+                <div class="history-container">
+                    <div class="history-header">
+                        <h3><i class="fas fa-history"></i> Histórico de Análises</h3>
+                        <div class="history-controls">
+                            <div class="search-container">
+                                <i class="fas fa-search"></i>
+                                <input type="text" id="historySearch" placeholder="Buscar nas análises..." class="search-input">
+                            </div>
+                            <select id="dateFilter" class="date-filter">
+                                <option value="all">Todas as datas</option>
+                                <option value="today">Hoje</option>
+                                <option value="week">Esta semana</option>
+                                <option value="month">Este mês</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="history-tabs">
+                        <button class="history-tab btn btn-secondary active" data-tab="all">
+                            <i class="fas fa-list"></i>
+                            Todas (<span id="countAll">0</span>)
+                        </button>
+                        <button class="history-tab btn btn-secondary" data-tab="financial-receipt">
+                            <i class="fas fa-hand-holding-usd"></i>
+                            Contas a Receber (<span id="countReceipt">0</span>)
+                        </button>
+                        <button class="history-tab btn btn-secondary" data-tab="financial-payment">
+                            <i class="fas fa-credit-card"></i>
+                            Contas a Pagar (<span id="countPayment">0</span>)
+                        </button>
+                    </div>
+                    
+                    <div class="history-content">
+                        <div class="history-list" id="historyList">
+                            <p class="no-history">Nenhuma análise realizada ainda.</p>
+                        </div>
+                        <div class="history-pagination" id="historyPagination" style="display: none;">
+                            <button class="pagination-btn btn btn-secondary" id="prevPage" disabled>
+                                <i class="fas fa-chevron-left"></i>
+                                Anterior
+                            </button>
+                            <span class="pagination-info" id="paginationInfo">Página 1 de 1</span>
+                            <button class="pagination-btn btn btn-secondary" id="nextPage" disabled>
+                                Próxima
+                                <i class="fas fa-chevron-right"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <div class="footer-content">
+                <p>&copy; 2025 Leitor de Fotos - Powered by <strong>Agregar Negócios</strong></p>
+                <div class="footer-links">
+                    <a href="#" class="footer-link">Privacidade</a>
+                    <a href="#" class="footer-link">Termos</a>
+                    <a href="#" class="footer-link">Suporte</a>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Toast Notifications -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- Status da API - Design Moderno -->
+    <div class="card shadow-sm mb-4" id="api-status-card">
+        <div class="card-header d-flex justify-content-between align-items-center bg-gradient-primary text-white">
+            <h5 class="card-title mb-0">
+                <i class="fa fa-server me-2"></i>Status da API
+            </h5>
+            <button class="btn btn-sm btn-light refresh-stats" title="Atualizar estatísticas">
+                <i class="fa fa-refresh"></i>
+            </button>
+        </div>
+        <div class="card-body p-0">
+            <!-- Status geral e barra de progresso -->
+            <div class="p-3 border-bottom">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <div>
+                        <span class="api-status-icon">
+                            <i class="fa fa-circle text-success me-2" id="api-status-icon"></i>
+                        </span>
+                        <strong id="api-status-text">Online</strong>
+                    </div>
+                    <div class="text-end">
+                        <span class="badge bg-primary" id="current-usage">0/15</span>
+                    </div>
+                </div>
+                <div class="progress" style="height: 8px;">
+                    <div class="progress-bar progress-bar-striped bg-success" role="progressbar" id="rate-limit-bar" 
+                        style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+                    </div>
+                </div>
+                <p class="text-muted mt-2 mb-0 small" id="api-status-message">API pronta para uso</p>
+            </div>
+            
+            <!-- Estatísticas em Cards -->
+            <div class="row g-0">
+                <!-- Card Rate Limiting -->
+                <div class="col-md-6 border-end">
+                    <div class="p-3">
+                        <h6 class="text-muted mb-3">
+                            <i class="fa fa-tachometer me-2"></i>Rate Limiting
+                        </h6>
+                        <div class="stat-item d-flex justify-content-between align-items-center mb-2">
+                            <span class="stat-label">Na fila</span>
+                            <span class="stat-value badge bg-primary rounded-pill" id="queue-size">0</span>
+                        </div>
+                        <div class="stat-item d-flex justify-content-between align-items-center mb-2">
+                            <span class="stat-label">Últimos 60s</span>
+                            <span class="stat-value badge bg-info rounded-pill" id="recent-requests">0</span>
+                        </div>
+                        <div class="stat-item d-flex justify-content-between align-items-center">
+                            <span class="stat-label">Limite/min</span>
+                            <span class="stat-value badge bg-warning rounded-pill" id="max-requests">15</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Card Cache -->
+                <div class="col-md-6">
+                    <div class="p-3">
+                        <h6 class="text-muted mb-3">
+                            <i class="fa fa-database me-2"></i>Cache
+                        </h6>
+                        <div class="stat-item d-flex justify-content-between align-items-center mb-2">
+                            <span class="stat-label">Itens</span>
+                            <span class="stat-value badge bg-success rounded-pill" id="cache-size">0</span>
+                        </div>
+                        <div class="stat-item d-flex justify-content-between align-items-center mb-2">
+                            <span class="stat-label">Taxa de acerto</span>
+                            <span class="stat-value badge bg-success rounded-pill" id="hit-rate">0%</span>
+                        </div>
+                        <div class="stat-item d-flex justify-content-between align-items-center">
+                            <span class="stat-label">Status</span>
+                            <span class="stat-value badge bg-success" id="cache-status">Ativo</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Nota de rodapé -->
+            <div class="card-footer bg-light py-2">
+                <small class="text-muted">
+                    <i class="fa fa-info-circle me-1"></i>Limite da API (gratuita): 15 requisições/minuto, 1.500/dia
+                </small>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+
+    <!-- Script para atualizar estatísticas da API -->
+    <script>
+        // Função para atualizar estatísticas da API
+        function updateStats() {
+            fetch('/api/stats')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        const apiStats = data.data.api;
+                        const cacheStats = data.data.cache;
+                        
+                        // Atualiza estatísticas da API
+                        document.getElementById('queue-size').textContent = apiStats.queueSize;
+                        document.getElementById('recent-requests').textContent = apiStats.recentRequestsCount;
+                        document.getElementById('max-requests').textContent = apiStats.maxRequestsPerMinute;
+                        
+                        // Atualiza estatísticas do cache
+                        document.getElementById('cache-size').textContent = `${cacheStats.size}`;
+                        document.getElementById('hit-rate').textContent = `${Math.round(cacheStats.hitRate * 100)}%`;
+                        
+                        // Atualiza status do cache
+                        const cacheStatusEl = document.getElementById('cache-status');
+                        cacheStatusEl.textContent = cacheStats.enabled ? 'Ativo' : 'Inativo';
+                        cacheStatusEl.className = cacheStats.enabled ? 'stat-value badge bg-success' : 'stat-value badge bg-secondary';
+                        
+                        // Atualiza barra de progresso e contador de uso
+                        const usagePercent = (apiStats.recentRequestsCount / apiStats.maxRequestsPerMinute) * 100;
+                        const progressBar = document.getElementById('rate-limit-bar');
+                        progressBar.style.width = `${usagePercent}%`;
+                        document.getElementById('current-usage').textContent = 
+                            `${apiStats.recentRequestsCount}/${apiStats.maxRequestsPerMinute}`;
+                        
+                        // Define cores da barra de progresso baseado no uso
+                        if (usagePercent < 50) {
+                            progressBar.className = 'progress-bar progress-bar-striped bg-success';
+                        } else if (usagePercent < 80) {
+                            progressBar.className = 'progress-bar progress-bar-striped bg-warning';
+                        } else {
+                            progressBar.className = 'progress-bar progress-bar-striped bg-danger';
+                        }
+                        
+                        // Atualiza ícone e texto de status
+                        const statusIcon = document.getElementById('api-status-icon');
+                        const statusText = document.getElementById('api-status-text');
+                        
+                        if (apiStats.queueSize > 0) {
+                            statusIcon.className = 'fa fa-circle text-warning me-2';
+                            statusText.textContent = 'Processando';
+                            document.getElementById('api-status-message').textContent = 
+                                `Processando ${apiStats.queueSize} requisições na fila. Aguarde...`;
+                        } else if (apiStats.recentRequestsCount >= apiStats.maxRequestsPerMinute) {
+                            statusIcon.className = 'fa fa-circle text-danger me-2';
+                            statusText.textContent = 'Limitado';
+                            document.getElementById('api-status-message').textContent = 
+                                `Rate limit atingido. Aguarde um momento antes de fazer novas requisições.`;
+                        } else {
+                            statusIcon.className = 'fa fa-circle text-success me-2';
+                            statusText.textContent = 'Online';
+                            document.getElementById('api-status-message').textContent = 
+                                `API pronta para uso. ${apiStats.maxRequestsPerMinute - apiStats.recentRequestsCount} requisições disponíveis.`;
+                        }
+                    }
+                })
+                .catch(error => {
+                    console.error('Erro ao obter estatísticas:', error);
+                    // Atualiza ícone e texto para mostrar erro
+                    const statusIcon = document.getElementById('api-status-icon');
+                    const statusText = document.getElementById('api-status-text');
+                    statusIcon.className = 'fa fa-circle text-danger me-2';
+                    statusText.textContent = 'Erro';
+                    document.getElementById('api-status-message').textContent = 'Erro ao conectar com a API.';
+                });
+        }
+        
+        // Atualiza estatísticas a cada 5 segundos
+        setInterval(updateStats, 5000);
+        
+        // Atualiza ao carregar a página
+        document.addEventListener('DOMContentLoaded', updateStats);
+        
+        // Botão de atualização manual
+        document.querySelectorAll('.refresh-stats').forEach(button => {
+            button.addEventListener('click', updateStats);
+        });
+    </script>
+</body>
+</html>
