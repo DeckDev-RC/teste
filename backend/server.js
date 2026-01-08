@@ -17,26 +17,41 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+// CORS Configuration - Permite requisições do frontend
+const corsOptions = {
+  origin: process.env.CORS_ORIGIN || '*',
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true
+};
+
 // Middlewares
-app.use(cors());
+app.use(cors(corsOptions));
 app.use(express.json());
 app.use('/uploads', express.static(path.join(__dirname, 'public', 'uploads')));
-
-// Servir Frontend (Vite Build)
-const frontendDistPath = path.join(__dirname, '../frontend/dist');
-app.use(express.static(frontendDistPath));
 
 // Rotas da API
 app.use('/api', systemRoutes);
 app.use('/api', analysisRoutes);
 
-// Fallback para SPA (Frontend React)
-app.get('*', (req, res) => {
-  res.sendFile(path.join(frontendDistPath, 'index.html'));
+// Health check para Easypanel
+app.get('/health', (req, res) => {
+  res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
+// Em produção, o frontend é servido pelo container separado
+// Em desenvolvimento, usa-se o proxy do Vite
+if (process.env.NODE_ENV !== 'production') {
+  const frontendDistPath = path.join(__dirname, '../frontend/dist');
+  app.use(express.static(frontendDistPath));
+  app.get('*', (req, res) => {
+    res.sendFile(path.join(frontendDistPath, 'index.html'));
+  });
+}
+
 // Inicialização
-app.listen(PORT, () => {
-  console.log(`🚀 Servidor rodando em http://localhost:${PORT}`);
-  console.log(`📂 Servindo frontend de: ${frontendDistPath}`);
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`🚀 Servidor rodando em http://0.0.0.0:${PORT}`);
+  console.log(`🌍 CORS habilitado para: ${corsOptions.origin}`);
+  console.log(`📦 Modo: ${process.env.NODE_ENV || 'development'}`);
 });
