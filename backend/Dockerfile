@@ -14,17 +14,18 @@ RUN apk add --no-cache \
     giflib-dev \
     librsvg-dev
 
-# Copiar apenas arquivos de dependências primeiro (para cache)
-COPY package*.json ./
+# Copiar package.json
+COPY package.json ./
 
 # Instalar dependências
-RUN npm ci --only=production
+RUN npm install --omit=dev
 
-# Copiar código do backend
-COPY backend/ ./backend/
+# Copiar código fonte
+COPY src/ ./src/
+COPY server.js ./
 
 # Criar diretório de dados
-RUN mkdir -p backend/data
+RUN mkdir -p data
 
 # Expor porta
 EXPOSE 3001
@@ -34,4 +35,4 @@ ENV NODE_ENV=production
 ENV PORT=3001
 
 # Comando de inicialização
-CMD ["node", "backend/server.js"]
+CMD ["node", "server.js"]
