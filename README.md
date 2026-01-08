@@ -2,20 +2,11 @@
 
 Sistema especializado para extração automatizada de dados de documentos financeiros utilizando IA do Google Gemini.
 
-## 🖥️ Versões Disponíveis
+## 🖥️ Versão Web
 
-### 🌐 **Versão Web** (Atual)
 - Interface web acessível via navegador
 - Execução em servidor Node.js
-- Ideal para uso compartilhado
-
-### 🖥️ **Versão Desktop (Tauri)** - ✨ **NOVO!**
-- Aplicativo desktop nativo
-- Melhor performance e segurança
-- Executável independente
-- Suporte a Windows, macOS e Linux
-
-**📖 Para usar a versão desktop, consulte o [Guia do Tauri](TAURI_SETUP.md)**
+- Ideal para uso pessoal e compartilhado
 
 ## 🎯 Funcionalidades
 
@@ -60,7 +51,7 @@ Identifica automaticamente o tipo de documento e extrai:
 
 ## 🚀 Como Usar
 
-1. **Acesse a interface web**: `http://localhost:3000`
+1. **Acesse a interface web**: `http://localhost:3001`
 2. **Selecione o tipo de documento**:
    - Para documentos de recebimento: escolha "Contas a Receber"
    - Para documentos de pagamento: escolha "Contas a Pagar"
@@ -113,22 +104,12 @@ echo "GEMINI_API_KEY=sua_chave_api_aqui" > .env
 ```
 
 4. **Inicie o servidor**:
-
-#### Versão Web:
 ```bash
 npm run web        # Servidor web na porta 3001
 npm run web-dev    # Servidor web com auto-reload
 ```
 
-#### Versão Desktop (Tauri):
-```bash
-npm run tauri-dev    # Desenvolvimento com hot-reload
-npm run tauri-build  # Compilar para produção
-```
-
-5. **Acesse a aplicação**: 
-   - **Web**: `http://localhost:3001`
-   - **Desktop**: Executável gerado em `src-tauri/target/release/`
+5. **Acesse a aplicação**: `http://localhost:3001`
 
 ## 🔧 API Endpoints
 
