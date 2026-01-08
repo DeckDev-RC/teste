@@ -50,4 +50,16 @@ coverage/
 pids
 *.pid
 *.seed
-*.pid.lock 
+*.pid.lock
+
+# Uploads de usuário
+web-interface/public/uploads/
+uploads/
+
+# Cache do servidor
+web-interface/public/cache/
+cache/
+
+# Editor configs
+.cursor/
+.cursor-tuning/
