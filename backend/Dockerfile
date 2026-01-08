@@ -1,18 +1,17 @@
 # Backend - Leitor de Documentos BPO
-FROM node:20-alpine
+FROM node:20-slim
 
 WORKDIR /app
 
-# Instalar dependências do sistema para canvas/sharp
-RUN apk add --no-cache \
-    python3 \
-    make \
-    g++ \
-    cairo-dev \
-    pango-dev \
-    jpeg-dev \
-    giflib-dev \
-    librsvg-dev
+# Instalar dependências do sistema para canvas
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    libcairo2-dev \
+    libpango1.0-dev \
+    libjpeg-dev \
+    libgif-dev \
+    librsvg2-dev \
+    && rm -rf /var/lib/apt/lists/*
 
 # Copiar package.json
 COPY package.json ./
