@@ -9,12 +9,13 @@ import {
     FileImage, FileType, Check,
     Gem, Zap, Factory, Store, BarChart3, Building,
     Sparkles, Brain, Route, Play, ChevronRight, Cpu, Star, RefreshCw,
-    BarChart, Layout, ChevronLeft, Info, ShieldCheck, FileCheck
+    BarChart, Layout, ChevronLeft, Info, ShieldCheck, FileCheck, LayoutDashboard
 } from 'lucide-react'
 import { useRef } from 'react'
 import { AuthContext } from '../App'
 import { useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
+import { authenticatedFetch } from '../utils/api'
 
 // Memoized Sub-components for performance
 const CompanyCard = memo(({ company, isSelected, onSelect }) => {
@@ -123,7 +124,7 @@ const ANALYSIS_TYPE_CONFIG = {
 }
 
 export default function HomePage() {
-    const { user, logout } = useContext(AuthContext)
+    const { user, logout, isMaster } = useContext(AuthContext)
     const navigate = useNavigate()
 
     const [files, setFiles] = useState([])
@@ -138,7 +139,7 @@ export default function HomePage() {
     const [results, setResults] = useState([])
     const [history, setHistory] = useState([])
     const [isDragging, setIsDragging] = useState(false)
-    const [usageStats, setUsageStats] = useState({ count: 0, limit: 2500, remaining: 2500 })
+    const [usageStats, setUsageStats] = useState({ count: 0, limit: 0, remaining: 0, percent: 0 })
     const [hasAnalyzed, setHasAnalyzed] = useState(false)
     const [showConfirmModal, setShowConfirmModal] = useState(false)
     const [showLimitModal, setShowLimitModal] = useState(false)
@@ -154,11 +155,42 @@ export default function HomePage() {
 
     const refreshSystemData = async () => {
         try {
-            // Fetch Stats (Usage)
-            const statsRes = await fetch('/api/stats')
-            const statsData = await statsRes.json()
-            if (statsData.success) {
-                setUsageStats(statsData.data.usage)
+            // Buscar créditos do usuário autenticado (prioridade)
+            if (user?.id) {
+                try {
+                    const creditsRes = await authenticatedFetch('/api/credits')
+                    const creditsData = await creditsRes.json()
+                    if (creditsData.success && creditsData.data) {
+                        const credits = creditsData.data
+                        // Usar valores do banco de dados, sem fallbacks hardcoded
+                        const creditsUsed = credits.credits_used ?? 0
+                        const creditsLimit = credits.credits_limit ?? 0
+                        const creditsRemaining = credits.credits_remaining ?? 0
+                        const percent = creditsLimit > 0 ? (creditsUsed / creditsLimit) * 100 : 0
+                        
+                        setUsageStats({
+                            count: creditsUsed,
+                            limit: creditsLimit,
+                            remaining: creditsRemaining,
+                            percent: percent
+                        })
+                    }
+                } catch (creditsError) {
+                    console.warn('Erro ao buscar créditos do usuário, usando fallback:', creditsError)
+                    // Fallback para stats global se falhar
+                    const statsRes = await fetch('/api/stats')
+                    const statsData = await statsRes.json()
+                    if (statsData.success) {
+                        setUsageStats(statsData.data.usage)
+                    }
+                }
+            } else {
+                // Se não autenticado, usar stats global
+                const statsRes = await fetch('/api/stats')
+                const statsData = await statsRes.json()
+                if (statsData.success) {
+                    setUsageStats(statsData.data.usage)
+                }
             }
 
             // Fetch Companies
@@ -203,12 +235,11 @@ export default function HomePage() {
 
         const saved = localStorage.getItem('analysisHistory')
         if (saved) setHistory(JSON.parse(saved))
-    }, [])
+    }, [user]) // Recarregar quando o usuário mudar
 
-    const handleLogout = () => {
-        logout()
+    const handleLogout = async () => {
+        await logout()
         navigate('/login')
-        toast.success('Até logo!')
     }
 
     const handleDragOver = useCallback((e) => { e.preventDefault(); setIsDragging(true) }, [])
@@ -290,7 +321,9 @@ export default function HomePage() {
 
         setIsAnalyzing(false)
         setHasAnalyzed(true)
-        refreshSystemData() // Refresh usage stats from server
+        
+        // Atualizar créditos imediatamente após análise
+        await refreshSystemData()
 
         const successResults = completedResults.filter(r => !r.error)
         const newHistory = [...successResults, ...history].slice(0, 100)
@@ -430,6 +463,15 @@ export default function HomePage() {
 
                         {/* Right: Auth Info */}
                         <div className="flex items-center justify-end gap-3">
+                            {isMaster && (
+                                <button 
+                                    onClick={() => navigate('/dashboard')}
+                                    className="p-2 text-light-200 hover:text-brand-blue rounded-lg hover:bg-dark-600 transition-colors"
+                                    title="Dashboard Master"
+                                >
+                                    <LayoutDashboard className="w-4 h-4" />
+                                </button>
+                            )}
                             <span className="text-sm text-light-200 hidden sm:block">{user?.email}</span>
                             <button onClick={handleLogout} className="p-2 text-light-200 hover:text-white rounded-lg hover:bg-dark-600">
                                 <LogOut className="w-4 h-4" />
@@ -713,21 +755,6 @@ export default function HomePage() {
                                         <h2 className="text-sm font-bold text-light-100 uppercase tracking-widest">Uso Mensal</h2>
                                     </div>
                                     <div className="flex items-center gap-3">
-                                        <button
-                                            onClick={async () => {
-                                                try {
-                                                    const res = await fetch('/api/usage/reset', { method: 'POST' });
-                                                    if (res.ok) {
-                                                        toast.success('Uso resetado!');
-                                                        refreshSystemData();
-                                                    }
-                                                } catch { toast.error('Erro ao resetar'); }
-                                            }}
-                                            className="text-[10px] text-amber-400 hover:text-amber-300 uppercase font-bold tracking-tight"
-                                            title="DEV: Resetar contador"
-                                        >
-                                            Reset
-                                        </button>
                                         <div className="text-right">
                                             <span className="text-lg font-bold text-light-100">{usageStats.count}</span>
                                             <span className="text-dark-500 text-xs font-bold"> / {usageStats.limit}</span>
@@ -739,12 +766,12 @@ export default function HomePage() {
                                     <motion.div
                                         className={`h-full rounded-full ${usageStats.remaining === 0
                                             ? 'bg-gradient-to-r from-red-500 to-red-600 animate-pulse'
-                                            : usageStats.percent > 90
+                                            : (usageStats.percent || 0) > 90
                                                 ? 'bg-gradient-to-r from-red-500 to-orange-500'
                                                 : 'bg-gradient-to-r from-brand-blue to-brand-blue-dark shadow-[0_0_15px_rgba(43,153,255,0.4)]'
                                             }`}
                                         initial={false}
-                                        animate={{ width: `${Math.min(usageStats.percent, 100)}%` }}
+                                        animate={{ width: `${Math.min(usageStats.percent || 0, 100)}%` }}
                                         transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
                                     />
                                 </div>

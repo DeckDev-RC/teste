@@ -1,0 +1,22 @@
+# ============================================
+# CONFIGURAÇÕES DO SUPABASE PARA O BACKEND
+# ============================================
+# Copie estas variáveis para o arquivo .env na RAIZ do projeto
+
+# URL do Supabase (self-hosted)
+SUPABASE_URL=http://31.97.164.208:8000
+
+# Chave de serviço (service key) - Bypass RLS para operações do sistema
+# IMPORTANTE: Mantenha esta chave segura! Nunca exponha no frontend!
+SUPABASE_SERVICE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoic2VydmljZV9yb2xlIiwiaXNzIjoic3VwYWJhc2UiLCJpYXQiOjE3Njc5MDYwNTcsImV4cCI6MTkyNTU4NjA1N30.-0wUDTLDADh9wfOerbCSHHariIr5Rp1cw73WTaOK8iI
+
+# Chave anônima para autenticação de usuários no backend
+SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzY3OTA2MDU3LCJleHAiOjE5MjU1ODYwNTd9.XfRF2jrytkfNyRiX0Rj_F7vjlsRPa_jxYKZ73bAbL64
+
+# ============================================
+# INSTRUÇÕES
+# ============================================
+# 1. Adicione estas 3 variáveis ao arquivo .env na RAIZ do projeto
+# 2. O arquivo .env já existe na raiz (backend/src/config/env.js busca lá)
+# 3. Nunca commite o .env no repositório
+# 4. A SERVICE_KEY é sensível - mantenha segura
