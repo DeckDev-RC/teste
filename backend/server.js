@@ -7,6 +7,11 @@ import { fileURLToPath } from 'url';
 // Importar Rotas
 import analysisRoutes from './src/routes/analysisRoutes.js';
 import systemRoutes from './src/routes/systemRoutes.js';
+import adminRoutes from './src/routes/adminRoutes.js';
+import dashboardRoutes from './src/routes/dashboardRoutes.js';
+
+// Middlewares de Segurança
+import { securityHeaders, apiRateLimiter } from './src/middleware/security.js';
 
 // Configurações e Utilitários
 import AIServiceFactory from './src/services/AIServiceFactory.js';
@@ -25,14 +30,20 @@ const corsOptions = {
   credentials: true
 };
 
+// Middlewares de Segurança (aplicar primeiro)
+app.use(securityHeaders);
+app.use(apiRateLimiter);
+
 // Middlewares
 app.use(cors(corsOptions));
-app.use(express.json());
+app.use(express.json({ limit: '10mb' })); // Limite de tamanho para prevenir DoS
 app.use('/uploads', express.static(path.join(__dirname, 'public', 'uploads')));
 
 // Rotas da API
 app.use('/api', systemRoutes);
 app.use('/api', analysisRoutes);
+app.use('/api/admin', adminRoutes); // Rotas administrativas (master/admin only)
+app.use('/api/dashboard', dashboardRoutes); // Rotas do dashboard (master/admin only)
 
 // Health check para Easypanel
 app.get('/health', (req, res) => {

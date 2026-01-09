@@ -2,6 +2,7 @@ import AIServiceFactory from '../services/AIServiceFactory.js';
 import cacheHelper from '../utils/cacheHelper.js';
 import analysisStore from '../utils/analysisStore.js';
 import usageService from '../services/usageService.js';
+import creditsService from '../services/creditsService.js';
 import { COMPANIES, getAvailableAnalysisTypes } from '../config/prompts.js';
 
 export const getProviders = (req, res) => {
@@ -56,6 +57,30 @@ export const setDefaultProvider = (req, res) => {
 
     AIServiceFactory.setDefaultProvider(provider);
     res.json({ success: true, message: `Provedor padrão alterado para ${provider}` });
+};
+
+// Obter créditos do usuário autenticado
+export const getUserCredits = async (req, res) => {
+    try {
+        if (!req.user || !req.user.id) {
+            return res.status(401).json({ 
+                success: false, 
+                error: 'Usuário não autenticado' 
+            });
+        }
+
+        const credits = await creditsService.getUserCredits(req.user.id);
+        res.json({
+            success: true,
+            data: credits
+        });
+    } catch (error) {
+        console.error('Erro ao obter créditos:', error);
+        res.status(500).json({ 
+            success: false, 
+            error: error.message || 'Erro ao obter créditos' 
+        });
+    }
 };
 
 // DEV ONLY: Reset usage counter

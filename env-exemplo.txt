@@ -1,9 +1,40 @@
 # Copie este conteúdo para um arquivo .env na raiz do projeto
 
-# Configurações da API do Google Gemini
+# ============================================
+# CONFIGURAÇÕES DO SUPABASE (FRONTEND)
+# ============================================
+# URL do Supabase (self-hosted ou cloud)
+# Para self-hosted: use HTTP (ex: http://31.97.164.208:8000)
+# Para cloud: use HTTPS (ex: https://seu-projeto.supabase.co)
+VITE_SUPABASE_URL=http://31.97.164.208:8000
+
+# Chave anônima (anon key) do Supabase
+# IMPORTANTE: Substitua pela chave do seu Supabase self-hosted ou cloud
+# Obtenha na VPS com: docker exec supabase-kong env | grep ANON_KEY
+VITE_SUPABASE_ANON_KEY=sua_chave_anon_aqui
+
+# ============================================
+# CONFIGURAÇÕES DO SUPABASE (BACKEND)
+# ============================================
+# URL do Supabase para o backend
+SUPABASE_URL=http://31.97.164.208:8000
+
+# Chave de serviço (service key) - Bypass RLS para operações do sistema
+# IMPORTANTE: Mantenha esta chave segura! Nunca exponha no frontend!
+# Obtenha na VPS com: docker exec supabase-kong env | grep SERVICE_ROLE_KEY
+SUPABASE_SERVICE_KEY=sua_service_key_aqui
+
+# Chave anônima para autenticação de usuários no backend
+SUPABASE_ANON_KEY=sua_chave_anon_aqui
+
+# ============================================
+# CONFIGURAÇÕES DA API DO GOOGLE GEMINI
+# ============================================
 GEMINI_API_KEY=REMOVED_API_KEY
 
-# Configurações do ambiente
+# ============================================
+# CONFIGURAÇÕES DO AMBIENTE
+# ============================================
 NODE_ENV=development
 
 # Instruções:

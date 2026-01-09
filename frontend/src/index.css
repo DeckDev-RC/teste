@@ -107,6 +107,29 @@ body {
   .glow-text {
     text-shadow: 0 0 20px rgba(56, 182, 255, 0.3);
   }
+
+  .shadow-glow {
+    box-shadow: 0 0 20px rgba(56, 182, 255, 0.15);
+  }
+
+  .shadow-glow-lg {
+    box-shadow: 0 0 40px rgba(56, 182, 255, 0.2);
+  }
+}
+
+@keyframes scaleIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-scale-in {
+  animation: scaleIn 0.3s ease-out;
 }
 
 /* Smooth transitions for all interactive elements */
