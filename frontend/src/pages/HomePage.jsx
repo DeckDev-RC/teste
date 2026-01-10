@@ -284,7 +284,8 @@ export default function HomePage() {
                 formData.append('provider', selectedProvider.id)
                 formData.append('batchId', batchId)
 
-                const response = await fetch('/api/analyze', { method: 'POST', body: formData })
+                // Usar authenticatedFetch para incluir token JWT
+                const response = await authenticatedFetch('/api/analyze', { method: 'POST', body: formData })
                 const data = await response.json()
 
                 processedCount++
