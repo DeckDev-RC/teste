@@ -24,6 +24,36 @@ export default defineConfig({
   },
   build: {
     outDir: 'dist',
-    emptyOutDir: true
+    emptyOutDir: true,
+    // Otimização: separar vendor libraries em chunks menores
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          // React core
+          'vendor-react': ['react', 'react-dom', 'react-router-dom'],
+          // Charting
+          'vendor-charts': ['chart.js', 'react-chartjs-2'],
+          // Animation
+          'vendor-motion': ['framer-motion'],
+          // Supabase
+          'vendor-supabase': ['@supabase/supabase-js'],
+          // Utils
+          'vendor-utils': ['jszip', 'file-saver', 'react-hot-toast', 'lucide-react']
+        }
+      }
+    }
+  },
+  // Configuração de testes com Vitest
+  test: {
+    globals: true,
+    environment: 'jsdom',
+    setupFiles: ['./src/test/setup.js'],
+    include: ['src/**/*.{test,spec}.{js,jsx}'],
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'json', 'html'],
+      exclude: ['node_modules/', 'src/test/']
+    }
   }
 })
+
