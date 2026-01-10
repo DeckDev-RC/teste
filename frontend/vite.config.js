@@ -13,6 +13,12 @@ export default defineConfig({
       '/api': {
         target: 'http://127.0.0.1:3001',
         changeOrigin: true
+      },
+      // Proxy para Supabase em desenvolvimento (evita Mixed Content)
+      '/supabase': {
+        target: 'http://31.97.164.208:8000',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/supabase/, '')
       }
     }
   },
