@@ -3,12 +3,13 @@
  */
 
 import { createClient } from '@supabase/supabase-js';
+import auditLogService from '../services/auditLogService.js';
 
 const supabaseUrl = process.env.SUPABASE_URL || 'http://31.97.164.208:8000';
 const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
 
 // Cliente Supabase para validar tokens
-const supabase = supabaseAnonKey 
+const supabase = supabaseAnonKey
     ? createClient(supabaseUrl, supabaseAnonKey)
     : null;
 
@@ -20,8 +21,15 @@ export const authenticate = async (req, res, next) => {
     try {
         // Obter token do header Authorization
         const authHeader = req.headers.authorization;
-        
+
         if (!authHeader || !authHeader.startsWith('Bearer ')) {
+            // Log de tentativa sem token
+            auditLogService.log({
+                event: auditLogService.events.TOKEN_MISSING,
+                ...auditLogService.extractRequestInfo(req),
+                metadata: { path: req.path }
+            });
+
             return res.status(401).json({
                 success: false,
                 error: 'Token de autenticação não fornecido'
@@ -47,6 +55,18 @@ export const authenticate = async (req, res, next) => {
         const { data: { user }, error } = await supabase.auth.getUser(token);
 
         if (error || !user) {
+            // Log de token inválido
+            auditLogService.log({
+                event: error?.message?.includes('expired')
+                    ? auditLogService.events.TOKEN_EXPIRED
+                    : auditLogService.events.TOKEN_INVALID,
+                ...auditLogService.extractRequestInfo(req),
+                metadata: {
+                    path: req.path,
+                    errorType: error?.message || 'unknown'
+                }
+            });
+
             return res.status(401).json({
                 success: false,
                 error: 'Token inválido ou expirado'
@@ -61,6 +81,16 @@ export const authenticate = async (req, res, next) => {
 
         next();
     } catch (error) {
+        // Log de erro de autenticação
+        auditLogService.log({
+            event: auditLogService.events.AUTH_FAILED,
+            ...auditLogService.extractRequestInfo(req),
+            metadata: {
+                path: req.path,
+                error: error.message
+            }
+        });
+
         console.error('Erro na autenticação:', error);
         return res.status(401).json({
             success: false,
@@ -76,11 +106,11 @@ export const authenticate = async (req, res, next) => {
 export const optionalAuth = async (req, res, next) => {
     try {
         const authHeader = req.headers.authorization;
-        
+
         if (authHeader && authHeader.startsWith('Bearer ') && supabase) {
             const token = authHeader.substring(7);
             const { data: { user } } = await supabase.auth.getUser(token);
-            
+
             if (user) {
                 // SEGURANÇA: Adicionar apenas ID (não expor email)
                 req.user = {
@@ -92,6 +122,7 @@ export const optionalAuth = async (req, res, next) => {
         // Ignora erros de autenticação opcional
         console.warn('Autenticação opcional falhou:', error.message);
     }
-    
+
     next();
 };
+
