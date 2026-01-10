@@ -5,7 +5,8 @@
     "description": "API para análise de documentos com IA",
     "scripts": {
         "start": "node server.js",
-        "dev": "node --watch server.js"
+        "dev": "node --watch server.js",
+        "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js"
     },
     "dependencies": {
         "@google/generative-ai": "^0.24.1",
@@ -22,6 +23,10 @@
         "multer": "^1.4.5-lts.1",
         "openai": "^5.10.2",
         "pdfjs-dist": "^5.4.54",
+        "winston": "^3.11.0",
         "zod": "^3.25.76"
+    },
+    "devDependencies": {
+        "jest": "^29.7.0"
     }
 }
