@@ -1,16 +1,33 @@
 import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Mail, Lock, User, ArrowRight, Brain, Zap, Sparkles, ShieldCheck } from 'lucide-react'
+import { Mail, Lock, User, ArrowRight, Brain, Zap, Sparkles, ShieldCheck, AlertTriangle } from 'lucide-react'
 import { supabase } from '../supabaseClient'
 import toast from 'react-hot-toast'
+import { checkPasswordPwned, formatPwnedMessage } from '../utils/passwordCheck'
 
 export default function RegisterPage() {
     const [email, setEmail] = useState('')
     const [password, setPassword] = useState('')
     const [confirmPassword, setConfirmPassword] = useState('')
     const [isLoading, setIsLoading] = useState(false)
+    const [checkingPassword, setCheckingPassword] = useState(false)
+    const [pwnedWarning, setPwnedWarning] = useState(null)
     const navigate = useNavigate()
+
+    // Verifica se a senha foi comprometida
+    const handlePasswordBlur = async () => {
+        if (password.length >= 8) {
+            setCheckingPassword(true)
+            const result = await checkPasswordPwned(password)
+            if (result.compromised) {
+                setPwnedWarning(formatPwnedMessage(result.count))
+            } else {
+                setPwnedWarning(null)
+            }
+            setCheckingPassword(false)
+        }
+    }
 
     const handleSubmit = async (e) => {
         e.preventDefault()
@@ -46,8 +63,22 @@ export default function RegisterPage() {
             return
         }
 
+        // SEGURANÇA: Verificação final de senha comprometida antes do cadastro
         setIsLoading(true)
         try {
+            const pwnedResult = await checkPasswordPwned(password)
+            if (pwnedResult.compromised) {
+                const confirmed = window.confirm(
+                    `⚠️ AVISO DE SEGURANÇA\n\n` +
+                    `${formatPwnedMessage(pwnedResult.count)}\n\n` +
+                    `Deseja continuar mesmo assim? (Não recomendado)`
+                )
+                if (!confirmed) {
+                    setIsLoading(false)
+                    return
+                }
+            }
+
             const { error } = await supabase.auth.signUp({
                 email,
                 password,
@@ -100,10 +131,23 @@ export default function RegisterPage() {
                             <input
                                 type="password"
                                 value={password}
-                                onChange={(e) => setPassword(e.target.value)}
+                                onChange={(e) => { setPassword(e.target.value); setPwnedWarning(null); }}
+                                onBlur={handlePasswordBlur}
                                 placeholder="••••••••"
                                 className="w-full px-5 py-4 bg-dark-700/50 border border-dark-600 rounded-2xl text-light-100 focus:outline-none focus:border-brand-blue transition-all"
                             />
+                            {checkingPassword && (
+                                <p className="text-xs text-dark-500 px-1 flex items-center gap-1">
+                                    <span className="w-3 h-3 border-2 border-brand-blue/30 border-t-brand-blue rounded-full animate-spin" />
+                                    Verificando segurança da senha...
+                                </p>
+                            )}
+                            {pwnedWarning && (
+                                <div className="flex items-start gap-2 p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl">
+                                    <AlertTriangle className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" />
+                                    <p className="text-xs text-amber-400">{pwnedWarning}</p>
+                                </div>
+                            )}
                         </div>
 
                         <div className="space-y-2">
