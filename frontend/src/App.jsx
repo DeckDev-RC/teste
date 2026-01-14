@@ -11,6 +11,7 @@ import { authenticatedFetch } from './utils/api'
 const RegisterPage = lazy(() => import('./pages/RegisterPage'))
 const DashboardPage = lazy(() => import('./pages/DashboardPage'))
 const UserDashboardPage = lazy(() => import('./pages/UserDashboardPage'))
+const WhatsAppPage = lazy(() => import('./pages/WhatsAppPage'))
 
 // Componente de loading para Suspense
 const PageLoader = () => (
@@ -180,7 +181,7 @@ function App() {
                     <Route
                         path="/whatsapp"
                         element={
-                            isAuthenticated ? <div className="min-h-screen bg-dark-900 flex items-center justify-center text-light-100">WhatsApp - Em breve</div> : <Navigate to="/login" replace />
+                            isAuthenticated ? <WhatsAppPage /> : <Navigate to="/login" replace />
                         }
                     />
                     <Route

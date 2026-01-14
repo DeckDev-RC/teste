@@ -10,6 +10,7 @@ import systemRoutes from './src/routes/systemRoutes.js';
 import adminRoutes from './src/routes/adminRoutes.js';
 import dashboardRoutes from './src/routes/dashboardRoutes.js';
 import userRoutes from './src/routes/userRoutes.js';
+import whatsappRoutes from './src/routes/whatsappRoutes.js';
 
 // Middlewares de Segurança
 import { securityHeaders, apiRateLimiter } from './src/middleware/security.js';
@@ -46,6 +47,7 @@ app.use('/api', analysisRoutes);
 app.use('/api/admin', adminRoutes); // Rotas administrativas (master/admin only)
 app.use('/api/dashboard', dashboardRoutes); // Rotas do dashboard (master/admin only)
 app.use('/api/user', userRoutes); // Rotas do dashboard do usuário
+app.use('/api/whatsapp', whatsappRoutes); // Rotas WhatsApp/Evolution
 
 // Health check para Easypanel
 app.get('/health', (req, res) => {
