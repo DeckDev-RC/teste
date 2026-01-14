@@ -167,7 +167,7 @@ export default function HomePage() {
                         const creditsLimit = credits.credits_limit ?? 0
                         const creditsRemaining = credits.credits_remaining ?? 0
                         const percent = creditsLimit > 0 ? (creditsUsed / creditsLimit) * 100 : 0
-                        
+
                         setUsageStats({
                             count: creditsUsed,
                             limit: creditsLimit,
@@ -322,7 +322,7 @@ export default function HomePage() {
 
         setIsAnalyzing(false)
         setHasAnalyzed(true)
-        
+
         // Atualizar créditos imediatamente após análise
         await refreshSystemData()
 
@@ -464,8 +464,17 @@ export default function HomePage() {
 
                         {/* Right: Auth Info */}
                         <div className="flex items-center justify-end gap-3">
+                            {/* User Dashboard - para todos os usuários */}
+                            <button
+                                onClick={() => navigate('/user-dashboard')}
+                                className="p-2 text-light-200 hover:text-brand-blue rounded-lg hover:bg-dark-600 transition-colors"
+                                title="Meu Painel"
+                            >
+                                <BarChart className="w-4 h-4" />
+                            </button>
+                            {/* Master Dashboard - apenas para admins */}
                             {isMaster && (
-                                <button 
+                                <button
                                     onClick={() => navigate('/dashboard')}
                                     className="p-2 text-light-200 hover:text-brand-blue rounded-lg hover:bg-dark-600 transition-colors"
                                     title="Dashboard Master"

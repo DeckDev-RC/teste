@@ -10,6 +10,7 @@ import { authenticatedFetch } from './utils/api'
 // Lazy load de páginas menos frequentes para reduzir bundle inicial
 const RegisterPage = lazy(() => import('./pages/RegisterPage'))
 const DashboardPage = lazy(() => import('./pages/DashboardPage'))
+const UserDashboardPage = lazy(() => import('./pages/UserDashboardPage'))
 
 // Componente de loading para Suspense
 const PageLoader = () => (
@@ -170,6 +171,30 @@ function App() {
                         path="/dashboard"
                         element={
                             isAuthenticated && isMaster ? <DashboardPage /> : <Navigate to="/" replace />
+                        }
+                    />
+                    <Route
+                        path="/user-dashboard"
+                        element={
+                            isAuthenticated ? <UserDashboardPage /> : <Navigate to="/login" replace />
+                        }
+                    />
+                    <Route
+                        path="/whatsapp"
+                        element={
+                            isAuthenticated ? <div className="min-h-screen bg-dark-900 flex items-center justify-center text-light-100">WhatsApp - Em breve</div> : <Navigate to="/login" replace />
+                        }
+                    />
+                    <Route
+                        path="/history"
+                        element={
+                            isAuthenticated ? <div className="min-h-screen bg-dark-900 flex items-center justify-center text-light-100">Histórico - Em breve</div> : <Navigate to="/login" replace />
+                        }
+                    />
+                    <Route
+                        path="/settings"
+                        element={
+                            isAuthenticated ? <div className="min-h-screen bg-dark-900 flex items-center justify-center text-light-100">Configurações - Em breve</div> : <Navigate to="/login" replace />
                         }
                     />
                     <Route

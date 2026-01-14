@@ -9,6 +9,7 @@ import analysisRoutes from './src/routes/analysisRoutes.js';
 import systemRoutes from './src/routes/systemRoutes.js';
 import adminRoutes from './src/routes/adminRoutes.js';
 import dashboardRoutes from './src/routes/dashboardRoutes.js';
+import userRoutes from './src/routes/userRoutes.js';
 
 // Middlewares de Segurança
 import { securityHeaders, apiRateLimiter } from './src/middleware/security.js';
@@ -44,6 +45,7 @@ app.use('/api', systemRoutes);
 app.use('/api', analysisRoutes);
 app.use('/api/admin', adminRoutes); // Rotas administrativas (master/admin only)
 app.use('/api/dashboard', dashboardRoutes); // Rotas do dashboard (master/admin only)
+app.use('/api/user', userRoutes); // Rotas do dashboard do usuário
 
 // Health check para Easypanel
 app.get('/health', (req, res) => {
