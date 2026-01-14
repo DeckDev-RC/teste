@@ -24,6 +24,9 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+// Configurar trust proxy para express-rate-limit (necessário por estar atrás do Traefik/Easypanel)
+app.set('trust proxy', 1);
+
 // CORS Configuration - Permite requisições do frontend
 const corsOptions = {
   origin: process.env.CORS_ORIGIN || '*',
