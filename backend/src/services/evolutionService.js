@@ -65,8 +65,8 @@ export async function createInstance(userId, instanceName) {
         return {
             success: true,
             data: {
-                instanceId,
-                instanceName,
+                instance_id: instanceId,
+                instance_name: instanceName,
                 ...evolutionResponse,
             },
         };

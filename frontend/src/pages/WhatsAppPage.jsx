@@ -56,7 +56,7 @@ export default function WhatsAppPage() {
             if (result.success) {
                 setInstance(result.data);
                 toast.success('Instância criada! Escaneie o QR Code.');
-                await loadQrCode(result.data.instanceId);
+                await loadQrCode(result.data.instance_id);
             } else {
                 toast.error(result.error || 'Erro ao criar instância');
             }
@@ -227,8 +227,8 @@ export default function WhatsAppPage() {
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-4">
                             <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${status === 'connected'
-                                    ? 'bg-emerald-500/10 border border-emerald-500/20'
-                                    : 'bg-dark-700 border border-dark-600'
+                                ? 'bg-emerald-500/10 border border-emerald-500/20'
+                                : 'bg-dark-700 border border-dark-600'
                                 }`}>
                                 {status === 'connected' ? (
                                     <Wifi className="w-6 h-6 text-emerald-500" />
@@ -374,8 +374,8 @@ export default function WhatsAppPage() {
                                             <button
                                                 onClick={() => toggleMonitor(group, !isMonitored)}
                                                 className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${isMonitored
-                                                        ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
-                                                        : 'bg-dark-700 text-dark-400 hover:text-light-200'
+                                                    ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                                                    : 'bg-dark-700 text-dark-400 hover:text-light-200'
                                                     }`}
                                             >
                                                 {isMonitored ? (

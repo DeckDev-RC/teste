@@ -76,22 +76,16 @@ export default function UserDashboardPage() {
         }
     ];
 
-    const getStatusColor = (status) => {
-        switch (status) {
-            case 'completed': return 'text-emerald-400';
-            case 'processing': return 'text-amber-400';
-            case 'failed': return 'text-red-400';
-            default: return 'text-dark-500';
-        }
+    const getStatusColor = (success) => {
+        if (success === true) return 'text-emerald-400';
+        if (success === false) return 'text-red-400';
+        return 'text-amber-400'; // fallback para processando se houver
     };
 
-    const getStatusIcon = (status) => {
-        switch (status) {
-            case 'completed': return <CheckCircle className="w-4 h-4" />;
-            case 'processing': return <RefreshCw className="w-4 h-4 animate-spin" />;
-            case 'failed': return <AlertCircle className="w-4 h-4" />;
-            default: return <Clock className="w-4 h-4" />;
-        }
+    const getStatusIcon = (success) => {
+        if (success === true) return <CheckCircle className="w-4 h-4" />;
+        if (success === false) return <AlertCircle className="w-4 h-4" />;
+        return <RefreshCw className="w-4 h-4 animate-spin" />;
     };
 
     if (loading && !stats) {
@@ -251,12 +245,11 @@ export default function UserDashboardPage() {
                                                 </span>
                                             </td>
                                             <td className="px-6 py-4">
-                                                <div className={`flex items-center gap-2 ${getStatusColor(analysis.status)}`}>
-                                                    {getStatusIcon(analysis.status)}
+                                                <div className={`flex items-center gap-2 ${getStatusColor(analysis.success)}`}>
+                                                    {getStatusIcon(analysis.success)}
                                                     <span className="text-sm capitalize">
-                                                        {analysis.status === 'completed' ? 'Concluído' :
-                                                            analysis.status === 'processing' ? 'Processando' :
-                                                                analysis.status === 'failed' ? 'Erro' : analysis.status}
+                                                        {analysis.success === true ? 'Concluído' :
+                                                            analysis.success === false ? 'Erro' : 'Processando'}
                                                     </span>
                                                 </div>
                                             </td>

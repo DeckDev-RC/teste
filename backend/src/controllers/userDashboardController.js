@@ -57,7 +57,7 @@ export const getUserStats = async (req, res) => {
             .select('*', { count: 'exact', head: true })
             .eq('user_id', userId)
             .gte('timestamp', startOfMonth)
-            .eq('status', 'completed');
+            .eq('success', true);
 
         // Créditos do usuário
         const { data: profile } = await supabaseAdmin
@@ -109,7 +109,7 @@ export const getUserAnalyses = async (req, res) => {
 
         const { data: analyses, error, count } = await supabaseAdmin
             .from('analysis_logs')
-            .select('id, file_name, analysis_type, status, created_at, company', { count: 'exact' })
+            .select('id, file_name, analysis_type, success, created_at, company', { count: 'exact' })
             .eq('user_id', userId)
             .order('created_at', { ascending: false })
             .range(offset, offset + limit - 1);
