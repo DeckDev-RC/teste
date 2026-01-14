@@ -135,15 +135,6 @@ export default function LoginPage() {
                 </>
               )}
             </button>
-
-            <div className="text-center mt-4">
-              <p className="text-dark-500 text-[10px] font-bold uppercase tracking-wider">
-                Não tem uma conta?{' '}
-                <Link to="/register" className="text-brand-blue hover:text-brand-blue-dark transition-colors">
-                  Cadastre-se
-                </Link>
-              </p>
-            </div>
           </form>
 
           <div className="flex items-center justify-center gap-4 mt-8 pt-6 border-t border-white/5">

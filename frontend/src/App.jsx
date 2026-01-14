@@ -159,9 +159,7 @@ function App() {
                     />
                     <Route
                         path="/register"
-                        element={
-                            isAuthenticated ? <Navigate to="/" replace /> : <RegisterPage />
-                        }
+                        element={<Navigate to="/login" replace />}
                     />
                     <Route
                         path="/recovery"
