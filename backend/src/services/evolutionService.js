@@ -17,6 +17,8 @@ const supabaseAdmin = supabaseServiceKey ? createClient(supabaseUrl, supabaseSer
 async function evolutionFetch(endpoint, options = {}) {
     const url = `${EVOLUTION_API_URL}${endpoint}`;
 
+    console.log(`[Evolution API] Request to: ${url}`);
+
     const response = await fetch(url, {
         ...options,
         headers: {

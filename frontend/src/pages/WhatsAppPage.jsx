@@ -54,9 +54,9 @@ export default function WhatsAppPage() {
             });
 
             if (result.success) {
-                setInstance(result.data);
+                setInstance(result.data.instance);
                 toast.success('Instância criada! Escaneie o QR Code.');
-                await loadQrCode(result.data.instance_id);
+                await loadQrCode(result.data.instance.instance_id);
             } else {
                 toast.error(result.error || 'Erro ao criar instância');
             }

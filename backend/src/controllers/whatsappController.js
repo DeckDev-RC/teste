@@ -40,7 +40,11 @@ export const createInstance = async (req, res) => {
         }
 
         const result = await evolutionService.createInstance(userId, instanceName);
-        res.json(result);
+        if (result.success) {
+            res.json({ success: true, data: { instance: result.data } });
+        } else {
+            res.json(result);
+        }
     } catch (error) {
         console.error('Erro ao criar instância:', error);
         res.status(500).json({ success: false, error: 'Erro ao criar instância' });
