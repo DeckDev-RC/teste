@@ -69,7 +69,7 @@ export async function createInstance(userId, instanceName) {
             data: {
                 instance_id: instanceId,
                 instance_name: instanceName,
-                ...evolutionResponse,
+                status: 'connecting',
             },
         };
     } catch (error) {
@@ -88,7 +88,7 @@ export async function getQrCode(instanceId) {
         return {
             success: true,
             data: {
-                qrcode: response.base64 || response.qrcode,
+                qrcode: response.base64 || response.qrcode || response.code,
                 pairingCode: response.pairingCode,
             },
         };

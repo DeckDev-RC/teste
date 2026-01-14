@@ -40,6 +40,7 @@ export const createInstance = async (req, res) => {
         }
 
         const result = await evolutionService.createInstance(userId, instanceName);
+        console.log('[WhatsApp Controller] Instance created:', result);
         if (result.success) {
             res.json({ success: true, data: { instance: result.data } });
         } else {
@@ -84,6 +85,7 @@ export const getInstance = async (req, res) => {
 export const getQrCode = async (req, res) => {
     try {
         const { instanceId } = req.params;
+        console.log('[WhatsApp Controller] Fetching QR for:', instanceId);
         if (!instanceId) {
             return res.status(400).json({ success: false, error: 'Instance ID obrigatório' });
         }
