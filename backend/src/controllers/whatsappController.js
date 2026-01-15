@@ -160,8 +160,8 @@ export const getGroups = async (req, res) => {
         // No Baileys, os grupos estão no store ou podem ser buscados
         const groups = await sock.groupFetchAllParticipating();
         const formattedGroups = Object.values(groups).map(g => ({
-            id: g.id,
-            subject: g.subject
+            jid: g.id,
+            name: g.subject
         }));
 
         res.json({ success: true, data: formattedGroups });
