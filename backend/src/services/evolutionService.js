@@ -263,7 +263,7 @@ export async function configureWebhook(instanceId, webhookUrl) {
                         'MESSAGES_UPSERT',
                         'MESSAGES_UPDATE',
                         'MESSAGES_SET',
-                        'SEND_MESSAGES',
+                        'SEND_MESSAGE',
                         'CHATS_UPDATE',
                         'CHATS_SET'
                     ]

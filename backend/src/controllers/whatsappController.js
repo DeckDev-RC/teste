@@ -303,6 +303,8 @@ export const handleWebhook = async (req, res) => {
         const isMessageEvent = eventLower === 'messages.upsert' ||
             eventLower === 'messages.set' ||
             eventLower === 'send.messages' ||
+            eventLower === 'send.message' ||
+            eventLower === 'messages.send' ||
             eventLower === 'messages.update';
 
         if (isMessageEvent && data) {
