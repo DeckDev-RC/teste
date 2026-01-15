@@ -298,8 +298,12 @@ export const handleWebhook = async (req, res) => {
 
         console.log(`[WhatsApp Webhook] ${event} from ${instance}`);
 
-        // Processa mensagens (upsert = nova, set = sync inicial)
-        const isMessageEvent = event === 'messages.upsert' || event === 'messages.set';
+        // Processa mensagens (upsert = nova, set = sync inicial, send = enviada por mim)
+        const eventLower = event.toLowerCase();
+        const isMessageEvent = eventLower === 'messages.upsert' ||
+            eventLower === 'messages.set' ||
+            eventLower === 'send.messages' ||
+            eventLower === 'messages.update';
 
         if (isMessageEvent && data) {
             // messages.upsert tem data.message, messages.set pode ter data.messages[]

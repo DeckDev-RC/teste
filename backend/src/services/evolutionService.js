@@ -256,12 +256,17 @@ export async function configureWebhook(instanceId, webhookUrl) {
         await evolutionFetch(`/webhook/set/${instanceId}`, {
             method: 'POST',
             body: JSON.stringify({
-                webhook: {
-                    enabled: true,
-                    url: webhookUrl,
-                    webhookByEvents: false,
-                    events: ['MESSAGES_UPSERT'],
-                },
+                url: webhookUrl,
+                enabled: true,
+                webhookByEvents: false,
+                events: [
+                    'MESSAGES_UPSERT',
+                    'MESSAGES_UPDATE',
+                    'MESSAGES_SET',
+                    'SEND_MESSAGES',
+                    'CHATS_UPDATE',
+                    'CHATS_SET'
+                ]
             }),
         });
 
