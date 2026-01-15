@@ -53,7 +53,10 @@ export default function WhatsAppPage() {
     }, [user]);
 
     const loadInstance = async () => {
-        setLoading(true);
+        // Só mostra loading se não tem dados ainda
+        if (!instance) {
+            setLoading(true);
+        }
         try {
             const result = await authenticatedJsonFetch('/api/whatsapp/instance');
             if (result.success && result.data.instance) {
@@ -496,8 +499,8 @@ export default function WhatsAppPage() {
                                 <button
                                     onClick={() => setGroupsTab('monitored')}
                                     className={`px-4 py-2 rounded-xl text-sm font-medium transition-all flex items-center gap-2 ${groupsTab === 'monitored'
-                                            ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
-                                            : 'bg-dark-700 text-dark-400 hover:text-light-200'
+                                        ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                                        : 'bg-dark-700 text-dark-400 hover:text-light-200'
                                         }`}
                                 >
                                     <Check className="w-4 h-4" />
@@ -509,8 +512,8 @@ export default function WhatsAppPage() {
                                 <button
                                     onClick={() => setGroupsTab('all')}
                                     className={`px-4 py-2 rounded-xl text-sm font-medium transition-all flex items-center gap-2 ${groupsTab === 'all'
-                                            ? 'bg-brand-blue/20 text-brand-blue border border-brand-blue/30'
-                                            : 'bg-dark-700 text-dark-400 hover:text-light-200'
+                                        ? 'bg-brand-blue/20 text-brand-blue border border-brand-blue/30'
+                                        : 'bg-dark-700 text-dark-400 hover:text-light-200'
                                         }`}
                                 >
                                     <Users className="w-4 h-4" />
@@ -579,8 +582,8 @@ export default function WhatsAppPage() {
                                                 >
                                                     <div className="flex items-center gap-3">
                                                         <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${isMonitored
-                                                                ? 'bg-emerald-500/10 border border-emerald-500/20'
-                                                                : 'bg-dark-700'
+                                                            ? 'bg-emerald-500/10 border border-emerald-500/20'
+                                                            : 'bg-dark-700'
                                                             }`}>
                                                             <Users className={`w-4 h-4 ${isMonitored ? 'text-emerald-500' : 'text-dark-500'}`} />
                                                         </div>
@@ -591,8 +594,8 @@ export default function WhatsAppPage() {
                                                     <button
                                                         onClick={() => toggleMonitor(group, !isMonitored)}
                                                         className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${isMonitored
-                                                                ? 'bg-emerald-500/10 text-emerald-400'
-                                                                : 'bg-dark-700 text-dark-400 hover:text-light-200'
+                                                            ? 'bg-emerald-500/10 text-emerald-400'
+                                                            : 'bg-dark-700 text-dark-400 hover:text-light-200'
                                                             }`}
                                                     >
                                                         {isMonitored ? '✓' : 'Monitorar'}
