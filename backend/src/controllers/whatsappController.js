@@ -311,6 +311,10 @@ export const handleWebhook = async (req, res) => {
                 const message = msgData.message || msgData;
                 const key = msgData.key || {};
 
+                // Log detalhado para debug
+                console.log(`[WhatsApp DEBUG] Key:`, JSON.stringify(key));
+                console.log(`[WhatsApp DEBUG] Message type:`, message ? Object.keys(message).join(', ') : 'undefined');
+
                 // Verifica se tem mídia
                 const hasMedia = message?.imageMessage || message?.documentMessage;
 
