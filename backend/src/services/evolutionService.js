@@ -194,11 +194,10 @@ export async function fetchGroups(instanceId) {
     }
 }
 
-/**
- * Baixa mídia de uma mensagem
- */
 export async function downloadMedia(instanceId, messageKey) {
     try {
+        console.log(`[WhatsApp DEBUG] Baixando mídia para instância ${instanceId}. Chave:`, JSON.stringify(messageKey));
+
         const response = await evolutionFetch(`/chat/getBase64FromMediaMessage/${instanceId}`, {
             method: 'POST',
             body: JSON.stringify({ message: messageKey }),
@@ -256,17 +255,19 @@ export async function configureWebhook(instanceId, webhookUrl) {
         await evolutionFetch(`/webhook/set/${instanceId}`, {
             method: 'POST',
             body: JSON.stringify({
-                url: webhookUrl,
-                enabled: true,
-                webhookByEvents: false,
-                events: [
-                    'MESSAGES_UPSERT',
-                    'MESSAGES_UPDATE',
-                    'MESSAGES_SET',
-                    'SEND_MESSAGES',
-                    'CHATS_UPDATE',
-                    'CHATS_SET'
-                ]
+                webhook: {
+                    url: webhookUrl,
+                    enabled: true,
+                    webhookByEvents: false,
+                    events: [
+                        'MESSAGES_UPSERT',
+                        'MESSAGES_UPDATE',
+                        'MESSAGES_SET',
+                        'SEND_MESSAGES',
+                        'CHATS_UPDATE',
+                        'CHATS_SET'
+                    ]
+                }
             }),
         });
 
