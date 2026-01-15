@@ -199,13 +199,19 @@ export const toggleGroupMonitor = async (req, res) => {
 
         if (active) {
             // Ativar monitoramento
-            await supabaseAdmin.from('monitored_groups').upsert({
+            const { error: upsertError } = await supabaseAdmin.from('monitored_groups').upsert({
                 instance_id: instance.id,
                 group_jid: groupJid,
                 group_name: groupName,
                 company: company || 'default',
                 active: true,
-            }, { onConflict: 'group_jid' });
+            }, { onConflict: 'instance_id,group_jid' });
+
+            if (upsertError) {
+                console.error('[WhatsApp] Erro ao salvar grupo:', upsertError);
+                throw upsertError;
+            }
+            console.log(`[WhatsApp] ✅ Grupo monitorado salvo: ${groupName}`);
         } else {
             // Desativar monitoramento
             await supabaseAdmin
@@ -213,6 +219,7 @@ export const toggleGroupMonitor = async (req, res) => {
                 .update({ active: false })
                 .eq('instance_id', instance.id)
                 .eq('group_jid', groupJid);
+            console.log(`[WhatsApp] ❌ Grupo removido do monitoramento: ${groupName}`);
         }
 
         res.json({ success: true });
