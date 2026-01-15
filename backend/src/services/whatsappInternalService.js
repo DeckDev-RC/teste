@@ -4,7 +4,8 @@ import makeWASocket, {
     makeCacheableSignalKeyStore,
     delay,
     downloadMediaMessage,
-    initAuthCreds
+    initAuthCreds,
+    BufferJSON
 } from '@whiskeysockets/baileys';
 import { createClient } from '@supabase/supabase-js';
 import pino from 'pino';
@@ -25,16 +26,14 @@ const logger = pino({ level: 'silent' });
 async function useSupabaseAuthState(instanceId) {
     const writeData = async (data, id) => {
         try {
+            // Usa BufferJSON.replacer para garantir que Buffers sejam serializados corretamente para o Supabase
+            const serializedData = JSON.parse(JSON.stringify(data, BufferJSON.replacer));
+
             const { error } = await supabaseAdmin
                 .from('whatsapp_sessions')
                 .upsert({
                     instance_id: `${instanceId}:${id}`,
-                    data: JSON.parse(JSON.stringify(data, (key, value) => {
-                        if (value instanceof Uint8Array || Buffer.isBuffer(value)) {
-                            return { _type: 'Buffer', _data: Buffer.from(value).toString('base64') };
-                        }
-                        return value;
-                    }))
+                    data: serializedData
                 });
             if (error) console.error(`❌ Erro ao salvar sessão (${id}):`, error.message);
         } catch (err) {
@@ -43,20 +42,21 @@ async function useSupabaseAuthState(instanceId) {
     };
 
     const readData = async (id) => {
-        const { data, error } = await supabaseAdmin
-            .from('whatsapp_sessions')
-            .select('data')
-            .eq('instance_id', `${instanceId}:${id}`)
-            .single();
+        try {
+            const { data, error } = await supabaseAdmin
+                .from('whatsapp_sessions')
+                .select('data')
+                .eq('instance_id', `${instanceId}:${id}`)
+                .single();
 
-        if (error || !data) return null;
+            if (error || !data) return null;
 
-        return JSON.parse(JSON.stringify(data.data), (key, value) => {
-            if (value && typeof value === 'object' && value._type === 'Buffer') {
-                return new Uint8Array(Buffer.from(value._data, 'base64'));
-            }
-            return value;
-        });
+            // Usa BufferJSON.reviver para restaurar Buffers corretamente
+            return JSON.parse(JSON.stringify(data.data), BufferJSON.reviver);
+        } catch (err) {
+            console.error(`❌ Erro ao ler sessão (${id}):`, err.message);
+            return null;
+        }
     };
 
     const removeData = async (id) => {
