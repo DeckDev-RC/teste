@@ -1,7 +1,7 @@
 /**
- * Controller para endpoints WhatsApp/Evolution
+ * Controller para endpoints WhatsApp Interno (Baileys)
  */
-import evolutionService from '../services/evolutionService.js';
+import whatsappInternalService from '../services/whatsappInternalService.js';
 import { createClient } from '@supabase/supabase-js';
 
 const supabaseUrl = process.env.SUPABASE_URL;
@@ -42,12 +42,12 @@ export const createInstance = async (req, res) => {
             }
         }
 
-        const result = await evolutionService.createInstance(userId, instanceName);
-        console.log('[WhatsApp Controller] Instance created:', result);
-        if (result.success) {
-            res.json({ success: true, data: { instance: result.data } });
+        const result = await whatsappInternalService.getOrCreateSession(instanceId);
+
+        if (result) {
+            res.json({ success: true, data: { instance: { instance_id: instanceId, instance_name: instanceName, status: 'connecting' } } });
         } else {
-            res.json(result);
+            res.status(500).json({ success: false, error: 'Falha ao iniciar instância' });
         }
     } catch (error) {
         console.error('Erro ao criar instância:', error);
@@ -96,13 +96,13 @@ export const getQrCode = async (req, res) => {
             return res.status(400).json({ success: false, error: 'Instance ID obrigatório' });
         }
 
-        const result = await evolutionService.getQrCode(instanceId);
+        const result = await whatsappInternalService.getStatus(instanceId);
 
-        // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/d963620b-ce3a-4920-aa1b-776bfde69876', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ location: 'whatsappController.js:94', message: 'Result from evolutionService', data: { success: result.success, hasData: !!result.data, hasQrcode: !!result.data?.qrcode, qrcodeLength: result.data?.qrcode?.length || 0 }, timestamp: Date.now(), sessionId: 'debug-session', runId: 'run1', hypothesisId: 'B' }) }).catch(() => { });
-        // #endregion
-
-        res.json(result);
+        if (result.qr) {
+            res.json({ success: true, data: { qrcode: result.qr } });
+        } else {
+            res.json({ success: true, data: { qrcode: null, status: result.status } });
+        }
     } catch (error) {
         // #region agent log
         fetch('http://127.0.0.1:7242/ingest/d963620b-ce3a-4920-aa1b-776bfde69876', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ location: 'whatsappController.js:97', message: 'Error in controller', data: { errorMessage: error.message }, timestamp: Date.now(), sessionId: 'debug-session', runId: 'run1', hypothesisId: 'E' }) }).catch(() => { });
@@ -122,29 +122,8 @@ export const getStatus = async (req, res) => {
             return res.status(400).json({ success: false, error: 'Instance ID obrigatório' });
         }
 
-        const result = await evolutionService.getConnectionStatus(instanceId);
-
-        // Se a instância não existe, retorna erro mais amigável
-        if (!result.success && result.error?.includes('does not exist')) {
-            return res.status(404).json({ success: false, error: 'Instância não encontrada' });
-        }
-
-        // Auto-registra webhook quando conectar (apenas uma vez)
-        if (result.success && result.data.status === 'connected' && !webhookRegistered.has(instanceId)) {
-            const publicUrl = process.env.PUBLIC_BACKEND_URL;
-            if (publicUrl) {
-                const webhookUrl = `${publicUrl}/api/whatsapp/webhook`;
-                try {
-                    await evolutionService.configureWebhook(instanceId, webhookUrl);
-                    webhookRegistered.add(instanceId);
-                    console.log(`✅ Webhook registrado: ${webhookUrl}`);
-                } catch (webhookError) {
-                    console.warn('⚠️ Falha ao registrar webhook:', webhookError.message);
-                }
-            }
-        }
-
-        res.json(result);
+        const status = await whatsappInternalService.getStatus(instanceId);
+        res.json({ success: true, data: status });
     } catch (error) {
         console.error('Erro ao verificar status:', error);
         res.status(500).json({ success: false, error: 'Erro ao verificar status' });
@@ -161,8 +140,19 @@ export const getGroups = async (req, res) => {
             return res.status(400).json({ success: false, error: 'Instance ID obrigatório' });
         }
 
-        const result = await evolutionService.fetchGroups(instanceId);
-        res.json(result);
+        const sock = await whatsappInternalService.getSocket(instanceId);
+        if (!sock) {
+            return res.json({ success: true, data: [] });
+        }
+
+        // No Baileys, os grupos estão no store ou podem ser buscados
+        const groups = await sock.groupFetchAllParticipating();
+        const formattedGroups = Object.values(groups).map(g => ({
+            id: g.id,
+            subject: g.subject
+        }));
+
+        res.json({ success: true, data: formattedGroups });
     } catch (error) {
         console.error('Erro ao buscar grupos:', error);
         res.status(500).json({ success: false, error: 'Erro ao buscar grupos' });
@@ -281,8 +271,13 @@ export const deleteInstance = async (req, res) => {
             return res.status(403).json({ success: false, error: 'Instância não encontrada' });
         }
 
-        const result = await evolutionService.deleteInstance(instanceId);
-        res.json(result);
+        await whatsappInternalService.deleteInstance(instanceId);
+
+        if (supabaseAdmin) {
+            await supabaseAdmin.from('whatsapp_instances').delete().eq('instance_id', instanceId);
+        }
+
+        res.json({ success: true });
     } catch (error) {
         console.error('Erro ao deletar instância:', error);
         res.status(500).json({ success: false, error: 'Erro ao deletar instância' });
@@ -293,80 +288,6 @@ export const deleteInstance = async (req, res) => {
  * POST /api/whatsapp/webhook - Webhook para receber mensagens do Evolution
  */
 export const handleWebhook = async (req, res) => {
-    try {
-        const { event, instance, data } = req.body;
-
-        console.log(`[WhatsApp Webhook] ${event} from ${instance}`);
-
-        // Processa mensagens (upsert = nova, set = sync inicial, send = enviada por mim)
-        const eventLower = event.toLowerCase();
-        const isMessageEvent = eventLower === 'messages.upsert' ||
-            eventLower === 'messages.set' ||
-            eventLower === 'send.messages' ||
-            eventLower === 'send.message' ||
-            eventLower === 'messages.send' ||
-            eventLower === 'messages.update';
-
-        if (isMessageEvent && data) {
-            // messages.upsert tem data.message, messages.set pode ter data.messages[]
-            const messages = event === 'messages.upsert'
-                ? [data]
-                : (data.messages || [data]);
-
-            for (const msgData of messages) {
-                const message = msgData.message || msgData;
-                const key = msgData.key || {};
-
-                // Log detalhado para debug
-                console.log(`[WhatsApp DEBUG] Key:`, JSON.stringify(key));
-                console.log(`[WhatsApp DEBUG] Message type:`, message ? Object.keys(message).join(', ') : 'undefined');
-
-                // Verifica se tem mídia
-                const hasMedia = message?.imageMessage || message?.documentMessage;
-
-                if (hasMedia && supabaseAdmin) {
-                    const remoteJid = key.remoteJid;
-
-                    console.log(`[WhatsApp] Mensagem com mídia de: ${remoteJid}`);
-
-                    const { data: monitoredGroup } = await supabaseAdmin
-                        .from('monitored_groups')
-                        .select('id, company')
-                        .eq('group_jid', remoteJid)
-                        .eq('active', true)
-                        .single();
-
-                    if (monitoredGroup) {
-                        // Evita duplicatas
-                        const { data: existing } = await supabaseAdmin
-                            .from('processed_messages')
-                            .select('id')
-                            .eq('message_id', key.id)
-                            .single();
-
-                        if (!existing) {
-                            await supabaseAdmin.from('processed_messages').insert({
-                                group_id: monitoredGroup.id,
-                                message_id: key.id,
-                                message_key: key, // Salva o objeto completo da chave
-                                sender_jid: key.participant || remoteJid,
-                                file_type: message.imageMessage ? 'image' : 'document',
-                                file_name: message.documentMessage?.fileName || 'image.jpg',
-                                status: 'pending',
-                            });
-
-                            console.log(`[WhatsApp] ✅ Mensagem salva para processar: ${key.id}`);
-                        }
-                    } else {
-                        console.log(`[WhatsApp] Grupo não monitorado: ${remoteJid}`);
-                    }
-                }
-            }
-        }
-
-        res.json({ success: true });
-    } catch (error) {
-        console.error('Erro no webhook:', error);
-        res.status(500).json({ success: false, error: 'Erro no webhook' });
-    }
+    // Webhook desativado - o processamento agora é interno via socket
+    res.json({ success: true, message: 'Webhooks are handled internally now.' });
 };

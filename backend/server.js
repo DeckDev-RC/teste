@@ -18,6 +18,7 @@ import { securityHeaders, apiRateLimiter } from './src/middleware/security.js';
 // Configurações e Utilitários
 import AIServiceFactory from './src/services/AIServiceFactory.js';
 import messageProcessor from './src/services/messageProcessor.js';
+import whatsappInternalService from './src/services/whatsappInternalService.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -72,8 +73,11 @@ if (process.env.NODE_ENV !== 'production') {
 }
 
 // Inicialização
-app.listen(PORT, '0.0.0.0', () => {
+app.listen(PORT, '0.0.0.0', async () => {
   console.log(`🚀 Servidor rodando em http://0.0.0.0:${PORT}`);
   console.log(`🌍 CORS habilitado para: ${corsOptions.origin}`);
   console.log(`📦 Modo: ${process.env.NODE_ENV || 'development'}`);
+
+  // Inicializa sessões do WhatsApp
+  await whatsappInternalService.initializeAllSessions();
 });

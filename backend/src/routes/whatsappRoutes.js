@@ -11,14 +11,10 @@ import {
     getGroups,
     toggleGroupMonitor,
     getMonitoredGroups,
-    deleteInstance,
-    handleWebhook,
+    deleteInstance
 } from '../controllers/whatsappController.js';
 
 const router = Router();
-
-// Webhook - sem autenticação (chamado pela Evolution API)
-router.post('/webhook', handleWebhook);
 
 // Rotas autenticadas
 router.use(authenticate);

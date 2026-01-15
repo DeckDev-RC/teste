@@ -1,6 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import AIServiceFactory from './AIServiceFactory.js';
-import { downloadMedia } from './evolutionService.js';
+import whatsappInternalService from './whatsappInternalService.js';
 import googleDriveService from './googleDriveService.js';
 import '../config/env.js';
 
@@ -91,9 +91,8 @@ class MessageProcessor {
             const userId = instanceData.user_id;
             const instanceId = instanceData.instance_id;
 
-            // 3. Baixa a mídia usando Evolution API
-            // Usamos o message_key completo se disponível, caso contrário fall-back para message_id
-            const mediaResult = await downloadMedia(instanceId, msg.message_key || msg.message_id);
+            // 3. Baixa a mídia usando Serviço Interno (Baileys)
+            const mediaResult = await whatsappInternalService.downloadMedia(instanceId, msg.message_key || msg.message_id);
 
             if (!mediaResult.success) {
                 throw new Error(`Erro ao baixar mídia: ${mediaResult.error}`);
