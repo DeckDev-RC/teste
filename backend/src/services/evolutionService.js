@@ -72,13 +72,17 @@ export async function createInstance(userId, instanceName) {
         // Gera um ID único para a instância
         const instanceId = `user_${userId.substring(0, 8)}_${Date.now()}`;
 
-        // Cria instância na Evolution API
+        // Cria instância na Evolution API com parâmetros de estabilidade
         const evolutionResponse = await evolutionFetch('/instance/create', {
             method: 'POST',
             body: JSON.stringify({
                 instanceName: instanceId,
                 qrcode: true,
                 integration: 'WHATSAPP-BAILEYS',
+                token: instanceId, // Usamos o ID como token para consistência
+                reject_call: true,
+                syncFullHistory: false, // CRÍTICO: Evita travamento em contas com muitas mensagens
+                alwaysOnline: true
             }),
         });
 
