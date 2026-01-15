@@ -2,6 +2,7 @@ import { createClient } from '@supabase/supabase-js';
 import AIServiceFactory from './AIServiceFactory.js';
 import whatsappInternalService from './whatsappInternalService.js';
 import googleDriveService from './googleDriveService.js';
+import creditsService from './creditsService.js';
 import '../config/env.js';
 
 const supabaseUrl = process.env.SUPABASE_URL;
@@ -141,20 +142,25 @@ class MessageProcessor {
             // Verificação de segurança: status já mudou?
             if (msg.status !== 'pending') return;
 
+            // 0. SENIOR GUARD: Verifica Créditos ANTES de gastar recurso de máquina
+            const instanceData = msg.monitored_groups?.whatsapp_instances;
+            if (!instanceData || !instanceData.instance_id) {
+                throw new Error(`Instância WhatsApp não encontrada para a mensagem ${msg.id}`);
+            }
+
+            const userId = instanceData.user_id;
+            const hasCredits = await creditsService.hasEnoughCredits(userId, 1);
+            if (!hasCredits) {
+                // Em produção, isso deveria talvez notificar o usuário via WhatsApp
+                throw new Error('SALDO_INSUFICIENTE: Recarregue seus créditos para continuar.');
+            }
+
             // Atualiza status para processing
             await supabaseAdmin
                 .from('processed_messages')
                 .update({ status: 'processing', updated_at: new Date().toISOString() })
                 .eq('id', msg.id);
 
-            // 2. Extrai dados da instância e usuário
-            const instanceData = msg.monitored_groups?.whatsapp_instances;
-
-            if (!instanceData || !instanceData.instance_id) {
-                throw new Error(`Instância WhatsApp não encontrada para a mensagem ${msg.id}`);
-            }
-
-            const userId = instanceData.user_id;
             const instanceId = instanceData.instance_id;
 
             // 3. Baixa a mídia usando Serviço Interno (Baileys)
@@ -165,12 +171,44 @@ class MessageProcessor {
             );
 
             if (!mediaResult.success) {
-                // Se falhar o download (mídia expirada/inválida), marcamos como falha e abortamos
                 throw new Error(`Erro ao baixar mídia: ${mediaResult.error}`);
             }
 
-            // 4. Envia para IA (Gemini)
-            const aiService = AIServiceFactory.getService('gemini'); // Usa Gemini por padrão para análise visual
+            // 4. STORAGE PRIMÁRIO (Supabase): Salva a prova original
+            let fileUrl = null;
+            try {
+                const buffer = Buffer.from(mediaResult.data.base64, 'base64');
+                const fileExt = mediaResult.data.mimetype.split('/')[1] || 'bin';
+                const fileName = `${userId}/${Date.now()}_${msg.id}.${fileExt}`;
+
+                // Tenta criar bucket se não existir (apenas precaução)
+                // await supabaseAdmin.storage.createBucket('whatsapp-evidence', { public: false }).catch(() => {});
+
+                const { data: uploadData, error: uploadError } = await supabaseAdmin
+                    .storage
+                    .from('whatsapp-evidence')
+                    .upload(fileName, buffer, {
+                        contentType: mediaResult.data.mimetype,
+                        upsert: false
+                    });
+
+                if (uploadError) throw uploadError;
+
+                // Gera URL assinada (válida por 1 ano)
+                const { data: signedUrlData } = await supabaseAdmin
+                    .storage
+                    .from('whatsapp-evidence')
+                    .createSignedUrl(fileName, 31536000);
+
+                fileUrl = signedUrlData?.signedUrl;
+                console.log(`💾 Arquivo original salvo no Supabase Storage`);
+            } catch (storageError) {
+                console.error('⚠️ Aviso: Falha no Supabase Storage:', storageError.message);
+                // Segue o baile se falhar o storage, pois o principal é a análise
+            }
+
+            // 5. Envia para IA (Gemini)
+            const aiService = AIServiceFactory.getService('gemini');
 
             // Prompt padrão para análise
             const prompt = `Analise este documento/imagem enviado via WhatsApp. 
@@ -178,28 +216,14 @@ class MessageProcessor {
             e forneça um resumo conciso. 
             Se for uma nota fiscal ou boleto, extraia os dados para pagamento.`;
 
-            // Realiza a análise (passando base64 direto, pois o GeminiService espera base64)
+            // Realiza a análise
             const analysisResult = await aiService.analyzeImage(prompt, mediaResult.data.base64, mediaResult.data.mimetype);
 
-            // 5. Upload para o Google Drive
-            let driveUrl = null;
-            try {
-                const uploadResult = await googleDriveService.uploadFile(
-                    mediaResult.data.base64,
-                    msg.file_name || `whatsapp_${Date.now()}`,
-                    mediaResult.data.mimetype
-                );
+            // 6. DEBIT: Cobra o crédito 
+            await creditsService.debitCredit(userId, 1);
+            console.log(`💰 1 Crédito debitado de ${userId}`);
 
-                if (uploadResult.success) {
-                    driveUrl = uploadResult.webViewLink;
-                    console.log(`☁️ Arquivo salvo no Google Drive: ${driveUrl}`);
-                }
-            } catch (driveError) {
-                console.warn(`⚠️ Falha no upload para Drive (Mensagem ${msg.id}):`, driveError.message);
-                // Não trava o processamento se falhar o drive, mas logamos
-            }
-
-            // 6. Salva resultado da análise no banco
+            // 7. Salva resultado
             const { data: analysisData, error: analysisError } = await supabaseAdmin
                 .from('analysis_results')
                 .insert({
@@ -207,33 +231,36 @@ class MessageProcessor {
                     file_name: msg.file_name,
                     file_type: mediaResult.data.mimetype,
                     analysis_json: typeof analysisResult === 'string' ? { text: analysisResult } : analysisResult,
-                    status: 'completed'
+                    status: 'completed',
+                    original_file_url: fileUrl // Novo campo (precisará ser criado no BD se não existir, ou usamos drive_url como fallback)
                 })
                 .select()
                 .single();
 
             if (analysisError) throw analysisError;
 
-            // 7. Finaliza processamento da mensagem com URL do Drive
+            // 8. Finaliza processamento
             await supabaseAdmin
                 .from('processed_messages')
                 .update({
                     status: 'completed',
                     analysis_result_id: analysisData.id,
-                    drive_url: driveUrl,
+                    drive_url: fileUrl, // Usando o campo drive_url para guardar a URL do Supabase por enquanto
                     updated_at: new Date().toISOString()
                 })
                 .eq('id', msg.id);
 
-            console.log(`✅ Mensagem ${msg.id} processada com sucesso!`);
+            console.log(`✅ Mensagem ${msg.id} finalizada com sucesso!`);
 
         } catch (error) {
             console.error(`❌ Falha ao processar mensagem ${msg.id}:`, error);
 
+            const isBalanceError = error.message.includes('SALDO_INSUFICIENTE');
+
             await supabaseAdmin
                 .from('processed_messages')
                 .update({
-                    status: 'failed',
+                    status: isBalanceError ? 'aborted' : 'failed',
                     error_message: error.message,
                     updated_at: new Date().toISOString()
                 })
