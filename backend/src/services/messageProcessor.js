@@ -8,72 +8,138 @@ const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY;
 const supabaseAdmin = supabaseServiceKey ? createClient(supabaseUrl, supabaseServiceKey) : null;
 
+// Classe simples para controle de concorrência
+class ConcurrencyQueue {
+    constructor(concurrency = 3) {
+        this.concurrency = concurrency;
+        this.running = 0;
+        this.queue = [];
+    }
+
+    add(fn) {
+        return new Promise((resolve, reject) => {
+            this.queue.push({ fn, resolve, reject });
+            this.processNext();
+        });
+    }
+
+    processNext() {
+        if (this.running >= this.concurrency || this.queue.length === 0) return;
+
+        this.running++;
+        const { fn, resolve, reject } = this.queue.shift();
+
+        fn().then(resolve).catch(reject).finally(() => {
+            this.running--;
+            this.processNext();
+        });
+    }
+}
+
 class MessageProcessor {
     constructor() {
-        this.isProcessing = false;
+        this.queue = new ConcurrencyQueue(3); // Processa máx 3 mensagens simultaneamente
         this.intervalId = null;
-        this.POLL_INTERVAL = 10000; // 10 segundos
+        this.realtimeChannel = null;
     }
 
     start() {
-        console.log('🚀 Message Processor iniciado (Polling a cada 10s)');
-        this.intervalId = setInterval(() => this.processQueue(), this.POLL_INTERVAL);
-        this.processQueue(); // Executa imediatamente ao iniciar
+        console.log('🚀 Message Processor: Iniciando modo Realtime + Fallback');
+
+        // 1. Configura Realtime para escutar novas mensagens instantaneamente
+        this.setupRealtime();
+
+        // 2. Fallback: Polling lento (5 min) para garantir que nada ficou para trás
+        this.intervalId = setInterval(() => this.processPendingMessages(), 5 * 60 * 1000);
+
+        // 3. Processa qualquer coisa que já esteja pendente ao iniciar
+        this.processPendingMessages();
     }
 
     stop() {
-        if (this.intervalId) {
-            clearInterval(this.intervalId);
-            this.intervalId = null;
-            console.log('🛑 Message Processor parado');
+        if (this.intervalId) clearInterval(this.intervalId);
+        if (this.realtimeChannel) supabaseAdmin.removeChannel(this.realtimeChannel);
+        console.log('🛑 Message Processor: Parado');
+    }
+
+    setupRealtime() {
+        if (!supabaseAdmin) return;
+
+        this.realtimeChannel = supabaseAdmin.channel('processed_messages_changes')
+            .on(
+                'postgres_changes',
+                { event: 'INSERT', schema: 'public', table: 'processed_messages', filter: 'status=eq.pending' },
+                async (payload) => {
+                    console.log('⚡ Evento Realtime recebido! Nova mensagem:', payload.new.id);
+                    // Adiciona à fila com um pequeno delay para garantir que transações do BD terminaram
+                    setTimeout(() => {
+                        this.queueMessage(payload.new.id);
+                    }, 500);
+                }
+            )
+            .subscribe((status) => {
+                if (status === 'SUBSCRIBED') {
+                    console.log('✅ Message Processor: Conectado ao Realtime do Supabase');
+                }
+            });
+    }
+
+    // Busca a mensagem completa no banco e coloca na fila
+    async queueMessage(id) {
+        const { data: msg, error } = await supabaseAdmin
+            .from('processed_messages')
+            .select(`
+                *,
+                monitored_groups (
+                    id,
+                    company,
+                    instance_id,
+                    whatsapp_instances (
+                        user_id,
+                        instance_id
+                    )
+                )
+            `)
+            .eq('id', id)
+            .single();
+
+        if (msg) {
+            this.queue.add(() => this.processMessage(msg));
+        } else if (error) {
+            console.error(`❌ Erro ao buscar detalhes da mensagem ${id}:`, error.message);
         }
     }
 
-    async processQueue() {
-        if (this.isProcessing || !supabaseAdmin) return;
-        this.isProcessing = true;
+    // Processa lote pendente (usado na inicialização e fallback)
+    async processPendingMessages() {
+        if (!supabaseAdmin) return;
 
         try {
-            // 1. Busca mensagens pendentes
             const { data: messages, error } = await supabaseAdmin
                 .from('processed_messages')
-                .select(`
-                    *,
-                    monitored_groups (
-                        id,
-                        company,
-                        instance_id,
-                        whatsapp_instances (
-                            user_id,
-                            instance_id
-                        )
-                    )
-                `)
+                .select('id')
                 .eq('status', 'pending')
-                .limit(5); // Processa em lotes pequenos
+                .limit(50); // Pega até 50 IDs para enfileirar
 
             if (error) throw error;
-            if (!messages || messages.length === 0) {
-                this.isProcessing = false;
-                return;
+
+            if (messages?.length > 0) {
+                console.log(`📥 Enfileirando ${messages.length} mensagens pendentes...`);
+                for (const msg of messages) {
+                    this.queueMessage(msg.id);
+                }
             }
-
-            console.log(`📥 Processando ${messages.length} mensagens pendentes...`);
-
-            for (const msg of messages) {
-                await this.processMessage(msg);
-            }
-
         } catch (error) {
-            console.error('❌ Erro no processamento da fila:', error);
-        } finally {
-            this.isProcessing = false;
+            console.error('❌ Erro no fallback polling:', error.message);
         }
     }
 
     async processMessage(msg) {
         try {
-            console.log(`🔄 Processando mensagem ${msg.id} (${msg.file_type})...`);
+            console.log(`🔄 Processando mensagem ${msg.id} (${msg.type || msg.file_type})...`);
+
+            // Verificação de segurança: status já mudou?
+            if (msg.status !== 'pending') return;
 
             // Atualiza status para processing
             await supabaseAdmin
@@ -99,14 +165,12 @@ class MessageProcessor {
             );
 
             if (!mediaResult.success) {
+                // Se falhar o download (mídia expirada/inválida), marcamos como falha e abortamos
                 throw new Error(`Erro ao baixar mídia: ${mediaResult.error}`);
             }
 
             // 4. Envia para IA (Gemini)
             const aiService = AIServiceFactory.getService('gemini'); // Usa Gemini por padrão para análise visual
-
-            // Prepara o buffer a partir do base64
-            const mediaBuffer = Buffer.from(mediaResult.data.base64, 'base64');
 
             // Prompt padrão para análise
             const prompt = `Analise este documento/imagem enviado via WhatsApp. 
