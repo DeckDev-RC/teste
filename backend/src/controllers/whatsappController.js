@@ -8,6 +8,9 @@ const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY;
 const supabaseAdmin = supabaseServiceKey ? createClient(supabaseUrl, supabaseServiceKey) : null;
 
+// Cache para evitar registrar webhook toda vez que checar status
+const webhookRegistered = new Set();
+
 /**
  * POST /api/whatsapp/instance - Criar nova instância
  */
@@ -87,22 +90,22 @@ export const getQrCode = async (req, res) => {
         const { instanceId } = req.params;
         console.log('[WhatsApp Controller] Fetching QR for:', instanceId);
         // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/d963620b-ce3a-4920-aa1b-776bfde69876',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'whatsappController.js:86',message:'getQrCode controller called',data:{instanceId},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+        fetch('http://127.0.0.1:7242/ingest/d963620b-ce3a-4920-aa1b-776bfde69876', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ location: 'whatsappController.js:86', message: 'getQrCode controller called', data: { instanceId }, timestamp: Date.now(), sessionId: 'debug-session', runId: 'run1', hypothesisId: 'B' }) }).catch(() => { });
         // #endregion
         if (!instanceId) {
             return res.status(400).json({ success: false, error: 'Instance ID obrigatório' });
         }
 
         const result = await evolutionService.getQrCode(instanceId);
-        
+
         // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/d963620b-ce3a-4920-aa1b-776bfde69876',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'whatsappController.js:94',message:'Result from evolutionService',data:{success:result.success,hasData:!!result.data,hasQrcode:!!result.data?.qrcode,qrcodeLength:result.data?.qrcode?.length || 0},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+        fetch('http://127.0.0.1:7242/ingest/d963620b-ce3a-4920-aa1b-776bfde69876', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ location: 'whatsappController.js:94', message: 'Result from evolutionService', data: { success: result.success, hasData: !!result.data, hasQrcode: !!result.data?.qrcode, qrcodeLength: result.data?.qrcode?.length || 0 }, timestamp: Date.now(), sessionId: 'debug-session', runId: 'run1', hypothesisId: 'B' }) }).catch(() => { });
         // #endregion
-        
+
         res.json(result);
     } catch (error) {
         // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/d963620b-ce3a-4920-aa1b-776bfde69876',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'whatsappController.js:97',message:'Error in controller',data:{errorMessage:error.message},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
+        fetch('http://127.0.0.1:7242/ingest/d963620b-ce3a-4920-aa1b-776bfde69876', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ location: 'whatsappController.js:97', message: 'Error in controller', data: { errorMessage: error.message }, timestamp: Date.now(), sessionId: 'debug-session', runId: 'run1', hypothesisId: 'E' }) }).catch(() => { });
         // #endregion
         console.error('Erro ao obter QR code:', error);
         res.status(500).json({ success: false, error: 'Erro ao obter QR code' });
@@ -120,10 +123,27 @@ export const getStatus = async (req, res) => {
         }
 
         const result = await evolutionService.getConnectionStatus(instanceId);
+
         // Se a instância não existe, retorna erro mais amigável
         if (!result.success && result.error?.includes('does not exist')) {
             return res.status(404).json({ success: false, error: 'Instância não encontrada' });
         }
+
+        // Auto-registra webhook quando conectar (apenas uma vez)
+        if (result.success && result.data.status === 'connected' && !webhookRegistered.has(instanceId)) {
+            const publicUrl = process.env.PUBLIC_BACKEND_URL;
+            if (publicUrl) {
+                const webhookUrl = `${publicUrl}/api/whatsapp/webhook`;
+                try {
+                    await evolutionService.configureWebhook(instanceId, webhookUrl);
+                    webhookRegistered.add(instanceId);
+                    console.log(`✅ Webhook registrado: ${webhookUrl}`);
+                } catch (webhookError) {
+                    console.warn('⚠️ Falha ao registrar webhook:', webhookError.message);
+                }
+            }
+        }
+
         res.json(result);
     } catch (error) {
         console.error('Erro ao verificar status:', error);
