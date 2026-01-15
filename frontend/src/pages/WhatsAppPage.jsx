@@ -8,6 +8,7 @@ import {
     CheckCircle, AlertCircle, Loader2, Sparkles, ExternalLink,
     Search, Coins, LogOut, BarChart, LayoutDashboard, Brain, Zap, Bot, Copy
 } from 'lucide-react';
+import { AuthContext } from '../App';
 import { authenticatedJsonFetch } from '../utils/api';
 import toast from 'react-hot-toast';
 import Header from '../components/Header';

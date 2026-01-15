@@ -19,13 +19,13 @@ export default function Header({ title }) {
 
     const navItems = [
         { label: 'Início', path: '/', icon: Home },
-        { label: 'Dashboard Usuário', path: '/dashboard', icon: LayoutDashboard },
+        { label: 'Dashboard Usuário', path: '/user-dashboard', icon: LayoutDashboard },
         { label: 'WhatsApp', path: '/whatsapp', icon: MessageSquare },
     ];
 
     // Adiciona Painel Master se for master
     if (isMaster) {
-        navItems.push({ label: 'Painel Master', path: '/master', icon: Settings, primary: true });
+        navItems.push({ label: 'Painel Master', path: '/dashboard', icon: Settings, primary: true });
     }
 
     return (
