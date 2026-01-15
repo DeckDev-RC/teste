@@ -195,8 +195,22 @@ class WhatsAppInternalService {
                 console.log('✅ Conexão aberta com sucesso!');
                 this.results.set(instanceId, { status: 'connected', qr: null });
 
-                // Atualiza status no banco
-                supabaseAdmin.from('whatsapp_instances').update({ status: 'connected', updated_at: new Date().toISOString() }).eq('instance_id', instanceId).then();
+                // Atualiza status e número no banco
+                const phoneNumber = sock.user?.id?.split(':')[0]?.split('@')[0] || sock.user?.id?.split('@')[0];
+                const updateData = {
+                    status: 'connected',
+                    updated_at: new Date().toISOString()
+                };
+
+                if (phoneNumber) {
+                    updateData.phone_number = phoneNumber;
+                    console.log(`📞 Número detectado: ${phoneNumber}`);
+                }
+
+                supabaseAdmin.from('whatsapp_instances')
+                    .update(updateData)
+                    .eq('instance_id', instanceId)
+                    .then();
             } else if (qr) {
                 // Atualiza status no banco para visualização do QR
                 supabaseAdmin.from('whatsapp_instances').update({ status: 'connecting', updated_at: new Date().toISOString() }).eq('instance_id', instanceId).then();

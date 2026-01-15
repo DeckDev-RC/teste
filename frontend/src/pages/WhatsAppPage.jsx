@@ -5,7 +5,8 @@ import {
     MessageSquare, QrCode, Users, Check, X, RefreshCw,
     ArrowLeft, Smartphone, Wifi, WifiOff, Trash2, Power,
     Building2, ChevronRight, FileText, Image, Clock,
-    CheckCircle, AlertCircle, Loader2, Sparkles, ExternalLink
+    CheckCircle, AlertCircle, Loader2, Sparkles, ExternalLink,
+    Search, Coins
 } from 'lucide-react';
 import { AuthContext } from '../App';
 import { authenticatedJsonFetch } from '../utils/api';
@@ -26,6 +27,14 @@ export default function WhatsAppPage() {
     const [creatingInstance, setCreatingInstance] = useState(false);
     const [loadingGroups, setLoadingGroups] = useState(false);
 
+    // New States for Phase 1
+    const [credits, setCredits] = useState(0);
+    const [searchTerm, setSearchTerm] = useState('');
+
+    // New States for Phase 2 & 3
+    const [feedFilter, setFeedFilter] = useState('all'); // 'all' | 'completed' | 'failed' | 'processing'
+    const [selectedDoc, setSelectedDoc] = useState(null);
+
     const [groupsTab, setGroupsTab] = useState('monitored'); // 'monitored' | 'all'
 
     // Determina etapa atual do stepper (3 etapas simples)
@@ -41,22 +50,40 @@ export default function WhatsAppPage() {
         { label: 'Pronto', icon: Sparkles }
     ];
 
+    // Filter Logic
+    const filteredGroups = groups.filter(g =>
+        g.name.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
     // Separa grupos monitorados dos demais
-    const monitoredGroupsList = groups.filter(g => monitoredGroups.includes(g.jid));
-    const otherGroupsList = groups.filter(g => !monitoredGroups.includes(g.jid));
+    const monitoredGroupsList = filteredGroups.filter(g => monitoredGroups.includes(g.jid));
+    const otherGroupsList = filteredGroups.filter(g => !monitoredGroups.includes(g.jid));
 
     // Carrega instância do usuário
     useEffect(() => {
         if (user) {
-            loadInstance();
+            loadData();
         }
     }, [user]);
 
-    const loadInstance = async () => {
+    const loadData = async () => {
         // Só mostra loading se não tem dados ainda
         if (!instance) {
             setLoading(true);
         }
+        try {
+            await Promise.all([
+                loadInstance(),
+                loadCredits()
+            ]);
+        } catch (error) {
+            console.error('Erro ao carregar dados:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const loadInstance = async () => {
         try {
             const result = await authenticatedJsonFetch('/api/whatsapp/instance');
             if (result.success && result.data.instance) {
@@ -65,8 +92,17 @@ export default function WhatsAppPage() {
             }
         } catch (error) {
             console.error('Erro ao carregar instância:', error);
-        } finally {
-            setLoading(false);
+        }
+    };
+
+    const loadCredits = async () => {
+        try {
+            const result = await authenticatedJsonFetch('/api/user/credits');
+            if (result.success) {
+                setCredits(result.data.credits);
+            }
+        } catch (error) {
+            console.error('Erro ao carregar créditos:', error);
         }
     };
 
@@ -108,6 +144,11 @@ export default function WhatsAppPage() {
             const result = await authenticatedJsonFetch(`/api/whatsapp/status/${instanceId}`);
             if (result.success) {
                 setStatus(result.data.status);
+                // Update instance data if phone number changed
+                if (result.data.instance) {
+                    setInstance(prev => ({ ...prev, ...result.data.instance }));
+                }
+
                 if (result.data.status === 'connected') {
                     setQrCode(null);
                     await Promise.all([
@@ -153,20 +194,34 @@ export default function WhatsAppPage() {
 
     const loadRecentDocs = async () => {
         try {
-            const result = await authenticatedJsonFetch('/api/user/analyses?limit=5');
+            let url = `/api/user/analyses?limit=5`;
+            if (feedFilter !== 'all') {
+                url += `&status=${feedFilter}`;
+            }
+
+            const result = await authenticatedJsonFetch(url);
             if (result.success) {
                 setRecentDocs(result.data.analyses || []);
-                // Conta docs de hoje
-                const today = new Date().toDateString();
-                const docsToday = (result.data.analyses || []).filter(d =>
-                    new Date(d.created_at).toDateString() === today
-                ).length;
-                setStats(prev => ({ ...prev, docsToday }));
+                // Se buscamos 'all', calculamos estatísticas de hoje
+                // (Se estiver filtrado, talvez não reflita todos de hoje, mas ok, mantemos assim ou fazemos fetch separado para stats)
+                if (feedFilter === 'all') {
+                    const today = new Date().toDateString();
+                    const docsToday = (result.data.analyses || []).filter(d =>
+                        new Date(d.created_at).toDateString() === today
+                    ).length;
+                    setStats(prev => ({ ...prev, docsToday }));
+                }
             }
         } catch (error) {
             console.error('Erro ao carregar documentos:', error);
         }
     };
+
+    useEffect(() => {
+        if (status === 'connected') {
+            loadRecentDocs();
+        }
+    }, [feedFilter]);
 
     const toggleMonitor = async (group, active) => {
         try {
@@ -381,7 +436,7 @@ export default function WhatsAppPage() {
                             <div className="absolute right-0 top-0 w-64 h-full bg-gradient-to-l from-emerald-500/10 to-transparent pointer-events-none" />
                         </motion.div>
 
-                        {/* Stats Card */}
+                        {/* Stats & Credits Card */}
                         <motion.div
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
@@ -390,26 +445,31 @@ export default function WhatsAppPage() {
                         >
                             <h3 className="text-lg font-bold text-light-100 mb-6 flex items-center gap-2">
                                 <Sparkles className="w-5 h-5 text-amber-400" />
-                                Resumo de Hoje
+                                Resumo & Créditos
                             </h3>
-                            <div className="space-y-6">
-                                <div className="flex items-center justify-between">
+                            <div className="space-y-4">
+                                <div className="flex items-center justify-between p-3 bg-dark-800/50 rounded-xl border border-dark-700">
                                     <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center">
-                                            <FileText className="w-5 h-5 text-blue-500" />
+                                        <div className="w-10 h-10 rounded-lg bg-yellow-500/10 flex items-center justify-center">
+                                            <Coins className="w-5 h-5 text-yellow-500" />
                                         </div>
-                                        <div className="text-sm text-dark-300">Documentos</div>
+                                        <div>
+                                            <p className="text-sm text-dark-300">Saldo Disponível</p>
+                                            <p className="text-xs text-dark-500">Para análises via IA</p>
+                                        </div>
                                     </div>
-                                    <span className="text-2xl font-bold text-light-100">{stats.docsToday}</span>
+                                    <span className="text-2xl font-bold text-light-100">{credits || 0}</span>
                                 </div>
-                                <div className="flex items-center justify-between border-t border-dark-700/50 pt-4">
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 rounded-lg bg-emerald-500/10 flex items-center justify-center">
-                                            <Users className="w-5 h-5 text-emerald-500" />
-                                        </div>
-                                        <div className="text-sm text-dark-300">Grupos Ativos</div>
+
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="text-center p-3 bg-dark-800/30 rounded-xl border border-dark-700/50">
+                                        <p className="text-2xl font-bold text-light-100">{stats.docsToday}</p>
+                                        <p className="text-dark-500 text-xs mt-1">Docs Hoje</p>
                                     </div>
-                                    <span className="text-2xl font-bold text-light-100">{stats.groups}</span>
+                                    <div className="text-center p-3 bg-dark-800/30 rounded-xl border border-dark-700/50">
+                                        <p className="text-2xl font-bold text-light-100">{stats.groups}</p>
+                                        <p className="text-dark-500 text-xs mt-1">Grupos Ativos</p>
+                                    </div>
                                 </div>
                             </div>
                         </motion.div>
@@ -426,31 +486,45 @@ export default function WhatsAppPage() {
                                 transition={{ delay: 0.2 }}
                                 className="glass rounded-2xl flex flex-col overflow-hidden h-full border border-dark-700/50 shadow-xl"
                             >
-                                <div className="p-5 border-b border-dark-700 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-dark-800/30">
-                                    <div className="flex items-center gap-3">
-                                        <Users className="w-5 h-5 text-emerald-500" />
-                                        <h2 className="text-lg font-bold text-light-100">Gerenciar Grupos</h2>
-                                    </div>
+                                <div className="p-5 border-b border-dark-700 flex flex-col gap-4 bg-dark-800/30">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-3">
+                                            <Users className="w-5 h-5 text-emerald-500" />
+                                            <h2 className="text-lg font-bold text-light-100">Gerenciar Grupos</h2>
+                                        </div>
 
-                                    <div className="flex bg-dark-900/50 p-1 rounded-lg">
-                                        <button
-                                            onClick={() => setGroupsTab('monitored')}
-                                            className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all ${groupsTab === 'monitored'
+                                        <div className="flex bg-dark-900/50 p-1 rounded-lg">
+                                            <button
+                                                onClick={() => setGroupsTab('monitored')}
+                                                className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all ${groupsTab === 'monitored'
                                                     ? 'bg-emerald-500 text-white shadow-lg'
                                                     : 'text-dark-400 hover:text-light-200'
-                                                }`}
-                                        >
-                                            Monitorados ({monitoredGroupsList.length})
-                                        </button>
-                                        <button
-                                            onClick={() => setGroupsTab('all')}
-                                            className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all ${groupsTab === 'all'
+                                                    }`}
+                                            >
+                                                Monitorados
+                                            </button>
+                                            <button
+                                                onClick={() => setGroupsTab('all')}
+                                                className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all ${groupsTab === 'all'
                                                     ? 'bg-brand-blue text-white shadow-lg'
                                                     : 'text-dark-400 hover:text-light-200'
-                                                }`}
-                                        >
-                                            Todos ({groups.length})
-                                        </button>
+                                                    }`}
+                                            >
+                                                Todos ({filteredGroups.length})
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    {/* Search Bar */}
+                                    <div className="relative">
+                                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-dark-500" />
+                                        <input
+                                            type="text"
+                                            placeholder="Buscar grupos por nome..."
+                                            value={searchTerm}
+                                            onChange={(e) => setSearchTerm(e.target.value)}
+                                            className="w-full bg-dark-900/50 border border-dark-700 rounded-xl pl-10 pr-4 py-2.5 text-sm text-light-100 focus:outline-none focus:border-brand-blue/50 focus:ring-1 focus:ring-brand-blue/50 transition-all placeholder:text-dark-600"
+                                        />
                                     </div>
                                 </div>
 
@@ -487,8 +561,8 @@ export default function WhatsAppPage() {
                                                         <button
                                                             onClick={() => toggleMonitor(group, !isMonitored)}
                                                             className={`p-2 rounded-lg transition-colors flex-shrink-0 ${isMonitored
-                                                                    ? 'text-red-400 hover:bg-red-500/10'
-                                                                    : 'text-dark-400 hover:text-emerald-400 hover:bg-emerald-500/10'
+                                                                ? 'text-red-400 hover:bg-red-500/10'
+                                                                : 'text-dark-400 hover:text-emerald-400 hover:bg-emerald-500/10'
                                                                 }`}
                                                         >
                                                             {isMonitored ? <X className="w-4 h-4" /> : <Power className="w-4 h-4" />}
@@ -519,18 +593,40 @@ export default function WhatsAppPage() {
                                 transition={{ delay: 0.3 }}
                                 className="glass rounded-2xl flex flex-col overflow-hidden h-full border border-dark-700/50 shadow-xl"
                             >
-                                <div className="p-5 border-b border-dark-700 flex items-center justify-between bg-dark-800/30">
-                                    <div className="flex items-center gap-3">
-                                        <div className="relative">
-                                            <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full animate-ping" />
-                                            <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full" />
-                                            <Smartphone className="w-5 h-5 text-brand-blue" />
+                                <div className="p-4 border-b border-dark-700 flex flex-col gap-3 bg-dark-800/30">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-3">
+                                            <div className="relative">
+                                                <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full animate-ping" />
+                                                <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full" />
+                                                <Smartphone className="w-5 h-5 text-brand-blue" />
+                                            </div>
+                                            <h2 className="text-lg font-bold text-light-100">Live Feed</h2>
                                         </div>
-                                        <h2 className="text-lg font-bold text-light-100">Live Feed</h2>
+                                        <button onClick={() => loadRecentDocs()} className="text-dark-400 hover:text-brand-blue transition-colors">
+                                            <RefreshCw className="w-4 h-4" />
+                                        </button>
                                     </div>
-                                    <button onClick={() => loadRecentDocs()} className="text-dark-400 hover:text-brand-blue transition-colors">
-                                        <RefreshCw className="w-4 h-4" />
-                                    </button>
+
+                                    {/* Feed Filters */}
+                                    <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+                                        {[
+                                            { id: 'all', label: 'Todos' },
+                                            { id: 'completed', label: 'Sucesso' },
+                                            { id: 'failed', label: 'Falhas' }
+                                        ].map(filter => (
+                                            <button
+                                                key={filter.id}
+                                                onClick={() => setFeedFilter(filter.id)}
+                                                className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider transition-all whitespace-nowrap ${feedFilter === filter.id
+                                                    ? 'bg-brand-blue text-white shadow-lg'
+                                                    : 'bg-dark-800 text-dark-400 hover:bg-dark-700'
+                                                    }`}
+                                            >
+                                                {filter.label}
+                                            </button>
+                                        ))}
+                                    </div>
                                 </div>
 
                                 <div className="flex-1 overflow-y-auto custom-scrollbar p-0">
@@ -542,17 +638,21 @@ export default function WhatsAppPage() {
                                     ) : (
                                         <div className="divide-y divide-dark-700/50">
                                             {recentDocs.map((doc) => (
-                                                <div key={doc.id} className="p-4 hover:bg-dark-800/30 transition-colors flex items-start gap-4">
+                                                <div
+                                                    key={doc.id}
+                                                    onClick={() => setSelectedDoc(doc)}
+                                                    className="p-4 hover:bg-dark-800/30 transition-colors flex items-start gap-4 cursor-pointer group"
+                                                >
                                                     <div className={`mt-1 w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${doc.status === 'completed' ? 'bg-emerald-500/10 text-emerald-500' :
-                                                            doc.status === 'processing' ? 'bg-amber-500/10 text-amber-500' :
-                                                                'bg-dark-700 text-dark-400'
+                                                        doc.status === 'processing' ? 'bg-amber-500/10 text-amber-500' :
+                                                            'bg-dark-700 text-dark-400'
                                                         }`}>
                                                         {doc.file_type?.includes('image') ? <Image className="w-5 h-5" /> : <FileText className="w-5 h-5" />}
                                                     </div>
 
                                                     <div className="flex-1 min-w-0">
                                                         <div className="flex items-start justify-between">
-                                                            <h4 className="text-sm font-medium text-light-100 truncate pr-4" title={doc.file_name}>
+                                                            <h4 className="text-sm font-medium text-light-100 truncate pr-4 group-hover:text-brand-blue transition-colors" title={doc.file_name}>
                                                                 {doc.file_name || 'Documento sem nome'}
                                                             </h4>
                                                             <span className="text-[10px] text-dark-500 whitespace-nowrap">
@@ -566,41 +666,165 @@ export default function WhatsAppPage() {
                                                         {/* Status Badge */}
                                                         <div className="flex items-center gap-3 mt-3">
                                                             <div className={`flex items-center gap-1.5 px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider ${doc.status === 'completed' ? 'bg-emerald-500/10 text-emerald-500' :
-                                                                    doc.status === 'processing' ? 'bg-amber-500/10 text-amber-500' :
-                                                                        doc.status === 'failed' ? 'bg-red-500/10 text-red-500' :
-                                                                            'bg-dark-700 text-dark-400'
+                                                                doc.status === 'processing' ? 'bg-amber-500/10 text-amber-500' :
+                                                                    doc.status === 'failed' ? 'bg-red-500/10 text-red-500' :
+                                                                        'bg-dark-700 text-dark-400'
                                                                 }`}>
                                                                 {doc.status === 'completed' && <CheckCircle className="w-3 h-3" />}
                                                                 {doc.status === 'processing' && <Loader2 className="w-3 h-3 animate-spin" />}
+                                                                {doc.status === 'failed' && <AlertCircle className="w-3 h-3" />}
                                                                 {doc.status}
                                                             </div>
-
-                                                            {doc.drive_url && (
-                                                                <a
-                                                                    href={doc.drive_url}
-                                                                    target="_blank"
-                                                                    className="text-xs text-brand-blue hover:underline flex items-center gap-1"
-                                                                >
-                                                                    Ver Arquivo <ExternalLink className="w-3 h-3" />
-                                                                </a>
-                                                            )}
                                                         </div>
                                                     </div>
+
+                                                    <ChevronRight className="w-4 h-4 text-dark-600 opacity-0 group-hover:opacity-100 transition-all self-center" />
                                                 </div>
                                             ))}
                                         </div>
                                     )}
                                 </div>
-                                <div className="p-3 border-t border-dark-700 bg-dark-800/20 text-center">
-                                    <button onClick={() => navigate('/history')} className="text-xs font-bold text-brand-blue hover:text-brand-blue/80 uppercase tracking-wider">
-                                        Ver Histórico Completo
+                            </motion.div>
+
+                        </div >
+                    )}
+                </div >
+            </div >
+            {/* Analysis Details Modal */}
+            <AnimatePresence>
+                {selectedDoc && (
+                    <DocumentDetailsModal doc={selectedDoc} onClose={() => setSelectedDoc(null)} />
+                )}
+            </AnimatePresence>
+
+        </div>
+    );
+}
+
+// Modal Component
+function DocumentDetailsModal({ doc, onClose }) {
+    if (!doc) return null;
+
+    const handleCopy = () => {
+        if (doc.analysis_json) {
+            navigator.clipboard.writeText(JSON.stringify(doc.analysis_json, null, 2));
+            toast.success('JSON copiado!');
+        }
+    };
+
+    const handleDownload = () => {
+        if (doc.original_file_url) {
+            const link = document.createElement('a');
+            link.href = doc.original_file_url;
+            link.download = doc.file_name || 'documento';
+            link.target = '_blank';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+    };
+
+    return (
+        <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
+            onClick={onClose}
+        >
+            <motion.div
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.9, opacity: 0 }}
+                className="bg-dark-900 border border-dark-700 rounded-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col shadow-2xl"
+                onClick={e => e.stopPropagation()}
+            >
+                {/* Modal Header */}
+                <div className="p-4 border-b border-dark-700 flex items-center justify-between bg-dark-800">
+                    <div className="flex items-center gap-3">
+                        <div className={`p-2 rounded-lg ${doc.status === 'completed' ? 'bg-emerald-500/10 text-emerald-500' :
+                            doc.status === 'processing' ? 'bg-amber-500/10 text-amber-500' :
+                                'bg-red-500/10 text-red-500'
+                            }`}>
+                            {doc.file_type?.includes('image') ? <Image className="w-5 h-5" /> : <FileText className="w-5 h-5" />}
+                        </div>
+                        <div>
+                            <h3 className="font-bold text-light-100 text-lg">{doc.file_name}</h3>
+                            <p className="text-xs text-dark-400 font-mono">{doc.id}</p>
+                        </div>
+                    </div>
+                    <button onClick={onClose} className="p-2 hover:bg-dark-700 rounded-lg text-dark-400 hover:text-light-100 transition-colors">
+                        <X className="w-6 h-6" />
+                    </button>
+                </div>
+
+                {/* Modal Body */}
+                <div className="flex-1 overflow-y-auto p-0 flex flex-col md:flex-row h-full">
+                    {/* Left: Preview */}
+                    <div className="md:w-1/2 p-6 bg-dark-900 flex flex-col items-center justify-center border-b md:border-b-0 md:border-r border-dark-700 min-h-[300px] relative group">
+                        {doc.original_file_url ? (
+                            <>
+                                {doc.file_type?.includes('image') ? (
+                                    <img
+                                        src={doc.original_file_url}
+                                        alt="Documento Original"
+                                        className="max-w-full max-h-[500px] object-contain rounded-lg shadow-lg border border-dark-700"
+                                    />
+                                ) : (
+                                    <div className="text-center p-8 border-2 border-dashed border-dark-700 rounded-xl bg-dark-800/20">
+                                        <FileText className="w-16 h-16 text-dark-600 mb-4 mx-auto" />
+                                        <p className="text-light-200 font-medium">Visualização não disponível</p>
+                                    </div>
+                                )}
+
+                                {/* Download Button Overlay */}
+                                <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <button
+                                        onClick={handleDownload}
+                                        className="p-2 bg-dark-800/80 hover:bg-brand-blue text-white rounded-lg shadow-lg backdrop-blur-sm transition-colors"
+                                        title="Baixar Arquivo Original"
+                                    >
+                                        <ExternalLink className="w-4 h-4" />
                                     </button>
                                 </div>
-                            </motion.div>
+                            </>
+                        ) : (
+                            <div className="text-center text-dark-500">
+                                <Image className="w-16 h-16 mb-2 mx-auto opacity-20" />
+                                <p>Imagem original não encontrada.</p>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Right: Data / JSON */}
+                    <div className="md:w-1/2 flex flex-col h-full bg-dark-800/30">
+                        <div className="p-4 border-b border-dark-700 bg-dark-800/80 sticky top-0 backdrop-blur-sm z-10 flex items-center justify-between">
+                            <h4 className="font-bold text-light-100 flex items-center gap-2">
+                                <Sparkles className="w-4 h-4 text-brand-gold" />
+                                Dados Extraídos
+                            </h4>
+                            <button
+                                onClick={handleCopy}
+                                className="text-xs flex items-center gap-1.5 px-2 py-1 bg-dark-700 hover:bg-dark-600 text-light-200 rounded-md transition-colors"
+                            >
+                                <CheckCircle className="w-3 h-3" /> Copiar JSON
+                            </button>
                         </div>
-                    )}
+                        <div className="p-4 overflow-y-auto custom-scrollbar flex-1">
+                            {doc.analysis_json ? (
+                                <pre className="bg-dark-950 p-4 rounded-xl text-xs font-mono text-emerald-400 overflow-x-auto border border-dark-700 whitespace-pre-wrap">
+                                    {JSON.stringify(doc.analysis_json, null, 2)}
+                                </pre>
+                            ) : (
+                                <div className="flex flex-col items-center justify-center h-full text-dark-500 gap-3">
+                                    <Loader2 className="w-8 h-8 animate-spin" />
+                                    <p>Processando análise...</p>
+                                </div>
+                            )}
+                        </div>
+                    </div>
                 </div>
-            </div>
-        </div>
+            </motion.div>
+        </motion.div>
     );
 }

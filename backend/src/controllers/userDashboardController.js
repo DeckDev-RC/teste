@@ -110,17 +110,25 @@ export const getUserAnalyses = async (req, res) => {
 
         const limit = parseInt(req.query.limit) || 10;
         const offset = parseInt(req.query.offset) || 0;
+        const status = req.query.status; // 'completed', 'failed', 'processing'
 
-        const { data: analyses, error, count } = await supabaseAdmin
-            .from('analysis_logs')
-            .select('id, file_name, analysis_type, success, created_at, company', { count: 'exact' })
+        let query = supabaseAdmin
+            .from('analysis_results')
+            .select('id, file_name, file_type, status, created_at, analysis_json, original_file_url', { count: 'exact' })
             .eq('user_id', userId)
             .order('created_at', { ascending: false })
             .range(offset, offset + limit - 1);
 
+        if (status && status !== 'all') {
+            query = query.eq('status', status);
+        }
+
+        const { data: analyses, error, count } = await query;
+
         if (error) {
             console.error('Erro ao buscar análises:', error);
-            return res.status(500).json({ success: false, error: 'Erro ao buscar análises' });
+            // Fallback para analysis_logs se analysis_results falhar (retrocompatibilidade)
+            return getUserAnalysesFromLogs(req, res);
         }
 
         res.json({
@@ -137,6 +145,36 @@ export const getUserAnalyses = async (req, res) => {
         res.status(500).json({ success: false, error: 'Erro ao buscar análises' });
     }
 };
+
+// Fallback method
+const getUserAnalysesFromLogs = async (req, res) => {
+    try {
+        const userId = req.user?.id;
+        const limit = parseInt(req.query.limit) || 10;
+        const offset = parseInt(req.query.offset) || 0;
+
+        const { data: analyses, error, count } = await supabaseAdmin
+            .from('analysis_logs')
+            .select('id, file_name, analysis_type, success, created_at, company', { count: 'exact' })
+            .eq('user_id', userId)
+            .order('created_at', { ascending: false })
+            .range(offset, offset + limit - 1);
+
+        if (error) throw error;
+
+        res.json({
+            success: true,
+            data: {
+                analyses: analyses || [],
+                total: count || 0,
+                limit,
+                offset
+            }
+        });
+    } catch (e) {
+        res.status(500).json({ success: false, error: 'Erro ao buscar análises (fallback)' });
+    }
+}
 
 /**
  * GET /api/user/credits - Créditos restantes do usuário
