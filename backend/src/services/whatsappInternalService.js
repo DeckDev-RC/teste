@@ -203,6 +203,7 @@ class WhatsAppInternalService {
                         group_id: monitoredGroup.id,
                         message_id: key.id,
                         message_key: key,
+                        message_content: message, // Salva o conteúdo para descriptografia posterior
                         sender_jid: key.participant || remoteJid,
                         file_type: message.imageMessage ? 'image' : 'document',
                         file_name: message.documentMessage?.fileName || (message.imageMessage ? 'image.jpg' : 'document'),
@@ -223,17 +224,15 @@ class WhatsAppInternalService {
         return this.sessions.get(instanceId);
     }
 
-    async downloadMedia(instanceId, messageKey) {
+    async downloadMedia(instanceId, messageKey, messageContent) {
         const sock = await this.getOrCreateSession(instanceId);
         if (!sock) throw new Error('Instância não disponível');
 
-        // Busca a mensagem original se recebemos apenas a chave
-        // Nota: O Baileys não mantém histórico em memória por padrão.
-        // Se a mensagem for muito antiga, precisaremos que o frontend/db nos passe o conteúdo da mensagem (message.imageMessage etc)
-        // Por enquanto, assumimos que a mensagem está sendo processada em tempo real ou temos o objeto completo.
-
-        // Se o que recebemos for o objeto completo da mensagem processada
-        const msg = messageKey.originalMessage || messageKey;
+        // Reconstrói o objeto de mensagem padrão do Baileys
+        const msg = {
+            key: messageKey,
+            message: messageContent
+        };
 
         try {
             const buffer = await downloadMediaMessage(

@@ -92,7 +92,11 @@ class MessageProcessor {
             const instanceId = instanceData.instance_id;
 
             // 3. Baixa a mídia usando Serviço Interno (Baileys)
-            const mediaResult = await whatsappInternalService.downloadMedia(instanceId, msg.message_key || msg.message_id);
+            const mediaResult = await whatsappInternalService.downloadMedia(
+                instanceId,
+                msg.message_key,
+                msg.message_content
+            );
 
             if (!mediaResult.success) {
                 throw new Error(`Erro ao baixar mídia: ${mediaResult.error}`);

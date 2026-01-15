@@ -129,7 +129,7 @@ export default function WhatsAppPage() {
         try {
             const result = await authenticatedJsonFetch(`/api/whatsapp/groups/${instanceId}`);
             if (result.success) {
-                setGroups(result.data.groups || []);
+                setGroups(result.data || []);
             }
         } catch (error) {
             console.error('Erro ao carregar grupos:', error);
