@@ -92,8 +92,8 @@ class MessageProcessor {
             const instanceId = instanceData.instance_id;
 
             // 3. Baixa a mídia usando Evolution API
-            // Nota: message_id no banco é o ID da mensagem no WhatsApp
-            const mediaResult = await downloadMedia(instanceId, msg.message_id);
+            // Usamos o message_key completo se disponível, caso contrário fall-back para message_id
+            const mediaResult = await downloadMedia(instanceId, msg.message_key || msg.message_id);
 
             if (!mediaResult.success) {
                 throw new Error(`Erro ao baixar mídia: ${mediaResult.error}`);

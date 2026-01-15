@@ -346,6 +346,7 @@ export const handleWebhook = async (req, res) => {
                             await supabaseAdmin.from('processed_messages').insert({
                                 group_id: monitoredGroup.id,
                                 message_id: key.id,
+                                message_key: key, // Salva o objeto completo da chave
                                 sender_jid: key.participant || remoteJid,
                                 file_type: message.imageMessage ? 'image' : 'document',
                                 file_name: message.documentMessage?.fileName || 'image.jpg',
