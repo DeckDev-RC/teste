@@ -42,6 +42,18 @@ export const createInstance = async (req, res) => {
             }
         }
 
+        const instanceId = `user_${userId.substring(0, 8)}_${Date.now()}`;
+
+        // Salva metadados da instância no banco
+        if (supabaseAdmin) {
+            await supabaseAdmin.from('whatsapp_instances').insert({
+                user_id: userId,
+                instance_name: instanceName,
+                instance_id: instanceId,
+                status: 'connecting',
+            });
+        }
+
         const result = await whatsappInternalService.getOrCreateSession(instanceId);
 
         if (result) {

@@ -27,7 +27,9 @@ async function useSupabaseAuthState(instanceId) {
             .upsert({
                 instance_id: `${instanceId}:${id}`,
                 data: JSON.parse(JSON.stringify(data, (key, value) => {
-                    if (value instanceof Uint8Array) return Buffer.from(value).toString('base64');
+                    if (value instanceof Uint8Array || Buffer.isBuffer(value)) {
+                        return { _type: 'Buffer', _data: Buffer.from(value).toString('base64') };
+                    }
                     return value;
                 }))
             });
@@ -44,12 +46,8 @@ async function useSupabaseAuthState(instanceId) {
         if (error || !data) return null;
 
         return JSON.parse(JSON.stringify(data.data), (key, value) => {
-            if (typeof value === 'string' && value.length > 20 && value.match(/^[a-zA-Z0-9+/]*={0,2}$/)) {
-                // Heurística básica para detectar base64 de Uint8Array (Baileys usa muito)
-                // Nota: Pode precisar de refinamento para casos específicos
-                try {
-                    return new Uint8Array(Buffer.from(value, 'base64'));
-                } catch { return value; }
+            if (value && typeof value === 'object' && value._type === 'Buffer') {
+                return new Uint8Array(Buffer.from(value._data, 'base64'));
             }
             return value;
         });
@@ -136,6 +134,9 @@ class WhatsAppInternalService {
                 const shouldReconnect = (lastDisconnect?.error)?.output?.statusCode !== DisconnectReason.loggedOut;
                 console.log('🔌 Conexão fechada devido a ', lastDisconnect.error, ', reconectando: ', shouldReconnect);
 
+                // Atualiza status no banco
+                supabaseAdmin.from('whatsapp_instances').update({ status: 'disconnected', updated_at: new Date().toISOString() }).eq('instance_id', instanceId).then();
+
                 if (shouldReconnect) {
                     this.sessions.delete(instanceId);
                     this.getOrCreateSession(instanceId);
@@ -147,6 +148,12 @@ class WhatsAppInternalService {
             } else if (connection === 'open') {
                 console.log('✅ Conexão aberta com sucesso!');
                 this.results.set(instanceId, { status: 'connected', qr: null });
+
+                // Atualiza status no banco
+                supabaseAdmin.from('whatsapp_instances').update({ status: 'connected', updated_at: new Date().toISOString() }).eq('instance_id', instanceId).then();
+            } else if (qr) {
+                // Atualiza status no banco para visualização do QR
+                supabaseAdmin.from('whatsapp_instances').update({ status: 'connecting', updated_at: new Date().toISOString() }).eq('instance_id', instanceId).then();
             }
         });
 
