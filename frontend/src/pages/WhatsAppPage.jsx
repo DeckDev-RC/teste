@@ -5,7 +5,7 @@ import {
     MessageSquare, QrCode, Users, Check, X, RefreshCw,
     ArrowLeft, Smartphone, Wifi, WifiOff, Trash2, Power,
     Building2, ChevronRight, FileText, Image, Clock,
-    CheckCircle, AlertCircle, Loader2, Sparkles
+    CheckCircle, AlertCircle, Loader2, Sparkles, ExternalLink
 } from 'lucide-react';
 import { AuthContext } from '../App';
 import { authenticatedJsonFetch } from '../utils/api';
@@ -656,18 +656,31 @@ export default function WhatsAppPage() {
                                             </p>
                                         </div>
                                     </div>
-                                    <div className={`flex items-center gap-1.5 text-xs font-medium ${doc.status === 'completed' ? 'text-emerald-400' :
-                                        doc.status === 'processing' ? 'text-amber-400' :
-                                            doc.status === 'failed' ? 'text-red-400' :
-                                                'text-dark-400'
-                                        }`}>
-                                        {doc.status === 'completed' && <CheckCircle className="w-4 h-4" />}
-                                        {doc.status === 'processing' && <Loader2 className="w-4 h-4 animate-spin" />}
-                                        {doc.status === 'failed' && <AlertCircle className="w-4 h-4" />}
-                                        {doc.status === 'pending' && <Clock className="w-4 h-4" />}
-                                        {doc.status === 'completed' ? 'Processado' :
-                                            doc.status === 'processing' ? 'Processando' :
-                                                doc.status === 'failed' ? 'Falhou' : 'Pendente'}
+                                    <div className="flex items-center gap-4">
+                                        {doc.drive_url && (
+                                            <a
+                                                href={doc.drive_url}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="p-2 hover:bg-dark-700/50 rounded-lg text-brand-blue transition-colors"
+                                                title="Ver no Google Drive"
+                                            >
+                                                <ExternalLink className="w-4 h-4" />
+                                            </a>
+                                        )}
+                                        <div className={`flex items-center gap-1.5 text-xs font-medium ${doc.status === 'completed' ? 'text-emerald-400' :
+                                            doc.status === 'processing' ? 'text-amber-400' :
+                                                doc.status === 'failed' ? 'text-red-400' :
+                                                    'text-dark-400'
+                                            }`}>
+                                            {doc.status === 'completed' && <CheckCircle className="w-4 h-4" />}
+                                            {doc.status === 'processing' && <Loader2 className="w-4 h-4 animate-spin" />}
+                                            {doc.status === 'failed' && <AlertCircle className="w-4 h-4" />}
+                                            {doc.status === 'pending' && <Clock className="w-4 h-4" />}
+                                            {doc.status === 'completed' ? 'Processado' :
+                                                doc.status === 'processing' ? 'Processando' :
+                                                    doc.status === 'failed' ? 'Falhou' : 'Pendente'}
+                                        </div>
                                     </div>
                                 </div>
                             ))}

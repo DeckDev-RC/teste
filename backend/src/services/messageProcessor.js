@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import AIServiceFactory from './AIServiceFactory.js';
 import { downloadMedia } from './evolutionService.js';
+import googleDriveService from './googleDriveService.js';
 import '../config/env.js';
 
 const supabaseUrl = process.env.SUPABASE_URL;
@@ -111,11 +112,27 @@ class MessageProcessor {
             Se for uma nota fiscal ou boleto, extraia os dados para pagamento.`;
 
             // Realiza a análise
-            // O AIService espera (buffer, mimetype, prompt) para análise de visão
-            // Precisamos garantir que o método suporte isso ou adaptar
             const analysisResult = await aiService.analyzeImage(mediaBuffer, mediaResult.data.mimetype, prompt);
 
-            // 5. Salva resultado
+            // 5. Upload para o Google Drive
+            let driveUrl = null;
+            try {
+                const uploadResult = await googleDriveService.uploadFile(
+                    mediaResult.data.base64,
+                    msg.file_name || `whatsapp_${Date.now()}`,
+                    mediaResult.data.mimetype
+                );
+
+                if (uploadResult.success) {
+                    driveUrl = uploadResult.webViewLink;
+                    console.log(`☁️ Arquivo salvo no Google Drive: ${driveUrl}`);
+                }
+            } catch (driveError) {
+                console.warn(`⚠️ Falha no upload para Drive (Mensagem ${msg.id}):`, driveError.message);
+                // Não trava o processamento se falhar o drive, mas logamos
+            }
+
+            // 6. Salva resultado da análise no banco
             const { data: analysisData, error: analysisError } = await supabaseAdmin
                 .from('analysis_results')
                 .insert({
@@ -130,12 +147,13 @@ class MessageProcessor {
 
             if (analysisError) throw analysisError;
 
-            // 6. Finaliza processamento da mensagem
+            // 7. Finaliza processamento da mensagem com URL do Drive
             await supabaseAdmin
                 .from('processed_messages')
                 .update({
                     status: 'completed',
                     analysis_result_id: analysisData.id,
+                    drive_url: driveUrl,
                     updated_at: new Date().toISOString()
                 })
                 .eq('id', msg.id);
