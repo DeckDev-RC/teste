@@ -22,6 +22,7 @@ import UsersTable from '../components/dashboard/UsersTable';
 import UserIATable from '../components/dashboard/UserIATable';
 import AlertsCard from '../components/dashboard/AlertsCard';
 import DateRangePicker from '../components/dashboard/DateRangePicker';
+import Header from '../components/Header';
 
 export default function DashboardPage() {
     const { user, logout, isMaster } = useContext(AuthContext);
@@ -79,11 +80,6 @@ export default function DashboardPage() {
         setFilters(prev => ({ ...prev, ...newFilters }));
     };
 
-    const handleLogout = async () => {
-        await logout();
-        navigate('/login');
-    };
-
     if (loading && !stats) {
         return (
             <div className="min-h-screen bg-dark-900 flex items-center justify-center">
@@ -109,71 +105,18 @@ export default function DashboardPage() {
             </div>
 
             <div className="relative z-20 flex flex-col min-h-screen">
-                {/* Standardized Header */}
-                <header className="bg-dark-800/80 backdrop-blur-md border-b border-dark-600 sticky top-0 z-50">
-                    <div className="max-w-screen-2xl mx-auto px-6 h-20 flex items-center justify-between">
-                        <div className="flex items-center gap-8">
-                            <div className="flex items-center gap-3 group cursor-pointer" onClick={() => navigate('/')}>
-                                <div className="w-10 h-10 bg-brand-blue rounded-xl flex items-center justify-center shadow-[0_0_20px_rgba(43,153,255,0.3)] group-hover:scale-110 transition-transform">
-                                    <BarChart3 className="w-6 h-6 text-white" />
-                                </div>
-                                <div className="hidden sm:block">
-                                    <h1 className="text-lg font-black text-light-100 tracking-tighter leading-none uppercase">Analytics</h1>
-                                    <p className="text-[10px] font-black text-brand-blue uppercase tracking-[0.2em] mt-1">Master Control</p>
-                                </div>
-                            </div>
+                <Header title="Analytics Master" />
 
-                            <nav className="hidden lg:flex items-center gap-1 bg-dark-900/50 p-1 rounded-xl border border-dark-600">
-                                <button
-                                    onClick={() => navigate('/')}
-                                    className="px-4 py-2 text-xs font-bold text-dark-400 hover:text-light-100 rounded-lg transition-all"
-                                >
-                                    Início
-                                </button>
-                                <button
-                                    onClick={() => navigate('/user-dashboard')}
-                                    className="px-4 py-2 text-xs font-bold text-dark-400 hover:text-light-100 rounded-lg transition-all"
-                                >
-                                    Dashboard Usuário
-                                </button>
-                                <button
-                                    className="px-4 py-2 text-xs font-bold bg-brand-blue text-white rounded-lg shadow-lg"
-                                >
-                                    Master Panel
-                                </button>
-                            </nav>
-                        </div>
-
-                        <div className="flex items-center gap-4">
-                            <div className="hidden xl:block">
-                                <DateRangePicker
-                                    startDate={filters.startDate}
-                                    endDate={filters.endDate}
-                                    onChange={handleDateRangeChange}
-                                />
-                            </div>
-
-                            <div className="h-8 w-px bg-dark-600 hidden md:block mx-2" />
-
-                            <div className="flex items-center gap-4">
-                                <div className="text-right hidden sm:block">
-                                    <p className="text-xs font-black text-light-100 uppercase tracking-tight">{user?.email?.split('@')[0]}</p>
-                                    <div className="flex items-center gap-1 justify-end">
-                                        <span className="w-1.5 h-1.5 bg-brand-blue rounded-full animate-pulse" />
-                                        <p className="text-[9px] font-black text-brand-blue uppercase tracking-widest">Master Admin</p>
-                                    </div>
-                                </div>
-                                <button
-                                    onClick={handleLogout}
-                                    className="w-10 h-10 bg-dark-700 hover:bg-red-500/10 border border-dark-600 hover:border-red-500/20 rounded-xl flex items-center justify-center text-dark-400 hover:text-red-500 transition-all active:scale-95"
-                                    title="Sair do sistema"
-                                >
-                                    <LogOut className="w-5 h-5" />
-                                </button>
-                            </div>
-                        </div>
+                {/* Toolbar for Date Filters */}
+                <div className="bg-dark-800/50 backdrop-blur-sm border-b border-dark-600 sticky top-16 z-40 py-3">
+                    <div className="max-w-screen-2xl mx-auto px-6 flex justify-end">
+                        <DateRangePicker
+                            startDate={filters.startDate}
+                            endDate={filters.endDate}
+                            onChange={handleDateRangeChange}
+                        />
                     </div>
-                </header>
+                </div>
 
                 <main className="flex-1 w-full max-w-screen-2xl mx-auto px-6 py-10">
                     <div className="space-y-10">

@@ -10,6 +10,7 @@ import {
 import { AuthContext } from '../App';
 import { authenticatedJsonFetch } from '../utils/api';
 import toast from 'react-hot-toast';
+import Header from '../components/Header';
 
 export default function UserDashboardPage() {
     const { user, logout, isMaster } = useContext(AuthContext);
@@ -45,11 +46,6 @@ export default function UserDashboardPage() {
         } finally {
             setLoading(false);
         }
-    };
-
-    const handleLogout = () => {
-        logout();
-        navigate('/login');
     };
 
     const quickActions = [
@@ -125,50 +121,9 @@ export default function UserDashboardPage() {
                 </motion.div>
             </div>
 
+            <Header title="Painel do Usuário" />
+
             <div className="relative z-20 flex flex-col min-h-screen">
-                {/* Standard Header */}
-                <header className="bg-dark-800/80 backdrop-blur-md border-b border-dark-600 sticky top-0 z-50">
-                    <div className="max-w-screen-xl mx-auto px-6 h-16 grid grid-cols-3 items-center">
-                        <div className="flex items-center gap-4">
-                            <img src="/logo.png" alt="Logo" className="h-10 w-auto object-contain brightness-110" />
-                        </div>
-
-                        <div className="flex items-center justify-center">
-                            <span className="font-bold text-light-100 whitespace-nowrap uppercase tracking-[0.2em] text-sm">Painel do Usuário</span>
-                        </div>
-
-                        <div className="flex items-center justify-end gap-2">
-                            <button
-                                onClick={() => navigate('/')}
-                                className="p-2.5 text-light-200 hover:text-brand-blue rounded-xl hover:bg-dark-700/50 transition-all group"
-                                title="Início"
-                            >
-                                <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
-                            </button>
-                            <button
-                                onClick={() => navigate('/whatsapp')}
-                                className="p-2.5 text-light-200 hover:text-emerald-500 rounded-xl hover:bg-dark-700/50 transition-all"
-                                title="WhatsApp"
-                            >
-                                <MessageSquare className="w-5 h-5" />
-                            </button>
-                            {isMaster && (
-                                <button
-                                    onClick={() => navigate('/dashboard')}
-                                    className="p-2.5 text-brand-gold hover:text-white rounded-xl hover:bg-dark-700/50 transition-all border border-brand-gold/10 hover:border-brand-gold/50"
-                                    title="Painel Master"
-                                >
-                                    <LayoutDashboard className="w-5 h-5" />
-                                </button>
-                            )}
-                            <div className="h-6 w-px bg-dark-600 mx-2"></div>
-                            <span className="text-xs font-medium text-dark-300 hidden sm:block mr-2">{user?.email}</span>
-                            <button onClick={handleLogout} className="p-2.5 text-dark-400 hover:text-red-400 rounded-xl hover:bg-red-500/5 transition-all">
-                                <LogOut className="w-5 h-5" />
-                            </button>
-                        </div>
-                    </div>
-                </header>
 
                 <main className="flex-1 max-w-screen-xl mx-auto px-6 py-12 w-full">
                     <motion.div

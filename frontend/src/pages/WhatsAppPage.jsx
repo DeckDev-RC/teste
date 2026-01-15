@@ -8,9 +8,9 @@ import {
     CheckCircle, AlertCircle, Loader2, Sparkles, ExternalLink,
     Search, Coins, LogOut, BarChart, LayoutDashboard, Brain, Zap, Bot, Copy
 } from 'lucide-react';
-import { AuthContext } from '../App';
 import { authenticatedJsonFetch } from '../utils/api';
 import toast from 'react-hot-toast';
+import Header from '../components/Header';
 
 export default function WhatsAppPage() {
     const { user, logout, isMaster } = useContext(AuthContext);
@@ -330,55 +330,9 @@ export default function WhatsAppPage() {
                 </motion.div>
             </div>
 
+            <Header title="WhatsApp" />
+
             <div className="relative z-20">
-                {/* Standard Header - From HomePage */}
-                <header className="bg-dark-800 border-b border-dark-600">
-                    <div className="max-w-screen-xl mx-auto px-6 h-14 grid grid-cols-3 items-center">
-                        {/* Left: Logo */}
-                        <div className="flex items-center">
-                            <img src="/logo.png" alt="Logo" className="h-10 w-auto object-contain brightness-110" />
-                        </div>
-
-                        {/* Center: Title */}
-                        <div className="flex items-center justify-center">
-                            <span className="font-semibold text-light-100 whitespace-nowrap">Leitor de Docs</span>
-                        </div>
-
-                        {/* Right: Auth Info */}
-                        <div className="flex items-center justify-end gap-3">
-                            {/* Home Button */}
-                            <button
-                                onClick={() => navigate('/')}
-                                className="p-2 text-light-200 hover:text-brand-blue rounded-lg hover:bg-dark-600 transition-colors"
-                                title="Início"
-                            >
-                                <ArrowLeft className="w-4 h-4" />
-                            </button>
-                            {/* User Dashboard */}
-                            <button
-                                onClick={() => navigate('/user-dashboard')}
-                                className="p-2 text-light-200 hover:text-brand-blue rounded-lg hover:bg-dark-600 transition-colors"
-                                title="Meu Painel"
-                            >
-                                <BarChart className="w-4 h-4" />
-                            </button>
-                            {/* Master Dashboard */}
-                            {isMaster && (
-                                <button
-                                    onClick={() => navigate('/dashboard')}
-                                    className="p-2 text-light-200 hover:text-brand-blue rounded-lg hover:bg-dark-600 transition-colors"
-                                    title="Dashboard Master"
-                                >
-                                    <LayoutDashboard className="w-4 h-4" />
-                                </button>
-                            )}
-                            <span className="text-sm text-light-200 hidden sm:block">{user?.email}</span>
-                            <button onClick={handleLogout} className="p-2 text-light-200 hover:text-white rounded-lg hover:bg-dark-600">
-                                <LogOut className="w-4 h-4" />
-                            </button>
-                        </div>
-                    </div>
-                </header>
 
                 <main className="max-w-screen-xl mx-auto px-6 py-8">
                     {/* Page Title Section */}

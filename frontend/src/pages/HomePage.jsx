@@ -16,6 +16,7 @@ import { AuthContext } from '../App'
 import { useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { authenticatedFetch } from '../utils/api'
+import Header from '../components/Header'
 
 // Memoized Sub-components for performance
 const CompanyCard = memo(({ company, isSelected, onSelect }) => {
@@ -447,51 +448,11 @@ export default function HomePage() {
                 </motion.div>
             </div>
 
+            <Header title="Leitor de Docs" />
+
             <div className="relative z-20">
-
-                {/* Simple Header */}
-                <header className="bg-dark-800 border-b border-dark-600">
-                    <div className="max-w-screen-xl mx-auto px-6 h-14 grid grid-cols-3 items-center">
-                        {/* Left: Logo */}
-                        <div className="flex items-center">
-                            <img src="/logo.png" alt="Logo" className="h-10 w-auto object-contain brightness-110" />
-                        </div>
-
-                        {/* Center: Title */}
-                        <div className="flex items-center justify-center">
-                            <span className="font-semibold text-light-100 whitespace-nowrap">Leitor de Docs</span>
-                        </div>
-
-                        {/* Right: Auth Info */}
-                        <div className="flex items-center justify-end gap-3">
-                            {/* User Dashboard - para todos os usuários */}
-                            <button
-                                onClick={() => navigate('/user-dashboard')}
-                                className="p-2 text-light-200 hover:text-brand-blue rounded-lg hover:bg-dark-600 transition-colors"
-                                title="Meu Painel"
-                            >
-                                <BarChart className="w-4 h-4" />
-                            </button>
-                            {/* Master Dashboard - apenas para admins */}
-                            {isMaster && (
-                                <button
-                                    onClick={() => navigate('/dashboard')}
-                                    className="p-2 text-light-200 hover:text-brand-blue rounded-lg hover:bg-dark-600 transition-colors"
-                                    title="Dashboard Master"
-                                >
-                                    <LayoutDashboard className="w-4 h-4" />
-                                </button>
-                            )}
-                            <span className="text-sm text-light-200 hidden sm:block">{user?.email}</span>
-                            <button onClick={handleLogout} className="p-2 text-light-200 hover:text-white rounded-lg hover:bg-dark-600">
-                                <LogOut className="w-4 h-4" />
-                            </button>
-                        </div>
-                    </div>
-                </header>
-
                 {/* Selection Summary Bar */}
-                <div className="bg-dark-800/80 backdrop-blur-md border-b border-dark-600 sticky top-0 z-40 py-2">
+                <div className="bg-dark-800/80 backdrop-blur-md border-b border-dark-600 sticky top-16 z-40 py-2">
                     <div className="max-w-screen-xl mx-auto px-6 flex items-center justify-center">
                         <div className="flex items-center gap-8 overflow-x-auto no-scrollbar">
                             <div className="flex items-center gap-3 shrink-0">
