@@ -45,7 +45,7 @@ app.use(apiRateLimiter);
 
 // Middlewares
 app.use(cors(corsOptions));
-app.use(express.json({ limit: '10mb' })); // Limite de tamanho para prevenir DoS
+app.use(express.json({ limit: '50mb' })); // Limite aumentado para webhooks com mídia base64
 app.use('/uploads', express.static(path.join(__dirname, 'public', 'uploads')));
 
 // Rotas da API

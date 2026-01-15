@@ -291,34 +291,57 @@ export const handleWebhook = async (req, res) => {
 
         console.log(`[WhatsApp Webhook] ${event} from ${instance}`);
 
-        // Processa apenas mensagens com mídia
-        if (event === 'messages.upsert' && data?.message) {
-            const message = data.message;
-            const hasMedia = message.imageMessage || message.documentMessage;
+        // Processa mensagens (upsert = nova, set = sync inicial)
+        const isMessageEvent = event === 'messages.upsert' || event === 'messages.set';
 
-            if (hasMedia && supabaseAdmin) {
-                // Verificar se é de um grupo monitorado
-                const remoteJid = data.key?.remoteJid;
+        if (isMessageEvent && data) {
+            // messages.upsert tem data.message, messages.set pode ter data.messages[]
+            const messages = event === 'messages.upsert'
+                ? [data]
+                : (data.messages || [data]);
 
-                const { data: monitoredGroup } = await supabaseAdmin
-                    .from('monitored_groups')
-                    .select('id, company')
-                    .eq('group_jid', remoteJid)
-                    .eq('active', true)
-                    .single();
+            for (const msgData of messages) {
+                const message = msgData.message || msgData;
+                const key = msgData.key || {};
 
-                if (monitoredGroup) {
-                    // Salva mensagem para processamento
-                    await supabaseAdmin.from('processed_messages').insert({
-                        group_id: monitoredGroup.id,
-                        message_id: data.key?.id,
-                        sender_jid: data.key?.participant || remoteJid,
-                        file_type: message.imageMessage ? 'image' : 'document',
-                        file_name: message.documentMessage?.fileName || 'image.jpg',
-                        status: 'pending',
-                    });
+                // Verifica se tem mídia
+                const hasMedia = message?.imageMessage || message?.documentMessage;
 
-                    console.log(`[WhatsApp] Nova mensagem para processar: ${data.key?.id}`);
+                if (hasMedia && supabaseAdmin) {
+                    const remoteJid = key.remoteJid;
+
+                    console.log(`[WhatsApp] Mensagem com mídia de: ${remoteJid}`);
+
+                    const { data: monitoredGroup } = await supabaseAdmin
+                        .from('monitored_groups')
+                        .select('id, company')
+                        .eq('group_jid', remoteJid)
+                        .eq('active', true)
+                        .single();
+
+                    if (monitoredGroup) {
+                        // Evita duplicatas
+                        const { data: existing } = await supabaseAdmin
+                            .from('processed_messages')
+                            .select('id')
+                            .eq('message_id', key.id)
+                            .single();
+
+                        if (!existing) {
+                            await supabaseAdmin.from('processed_messages').insert({
+                                group_id: monitoredGroup.id,
+                                message_id: key.id,
+                                sender_jid: key.participant || remoteJid,
+                                file_type: message.imageMessage ? 'image' : 'document',
+                                file_name: message.documentMessage?.fileName || 'image.jpg',
+                                status: 'pending',
+                            });
+
+                            console.log(`[WhatsApp] ✅ Mensagem salva para processar: ${key.id}`);
+                        }
+                    } else {
+                        console.log(`[WhatsApp] Grupo não monitorado: ${remoteJid}`);
+                    }
                 }
             }
         }
