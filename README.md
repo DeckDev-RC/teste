@@ -1,129 +1,86 @@
-# 💰 Leitor de Documentos Financeiros BPO (AI-Powered)
+# 💰 Leitor de Documentos BPO (AI-Powered)
 
-[![GitHub Actions CI](https://github.com/DeckDev-RC/teste/actions/workflows/tests.yml/badge.svg)](https://github.com/DeckDev-RC/teste/actions/workflows/tests.yml)
+[![GitHub Actions Status](https://github.com/DeckDev-RC/teste/actions/workflows/tests.yml/badge.svg)](https://github.com/DeckDev-RC/teste/actions)
+[![React](https://img.shields.io/badge/React-18.2-blue.svg)](https://reactjs.org/)
 [![Node.js](https://img.shields.io/badge/Node.js-18+-green.svg)](https://nodejs.org/)
-[![React](https://img.shields.io/badge/React-18+-blue.svg)](https://reactjs.org/)
-[![Supabase](https://img.shields.io/badge/Supabase-Self--Hosted-blueviolet.svg)](https://supabase.com/)
+[![Supabase](https://img.shields.io/badge/Supabase-Backend-blueviolet.svg)](https://supabase.com/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-Sistema de nível empresarial para extração automatizada, processamento e gestão de documentos financeiros utilizando Inteligência Artificial de última geração. Desenvolvido para BPOs financeiros que buscam escala e precisão.
-
-## 🚀 Visão Geral
-
-O **Leitor de Docs BPO** transforma imagens e PDFs em dados estruturados em segundos. Utilizando os modelos **Google Gemini 2.0 Flash**, a plataforma identifica automaticamente tipos de documentos, extrai valores, datas e fornecedores, e centraliza tudo em dashboards analíticos intuitivos.
+O **Leitor de Documentos BPO** é uma solução de nível empresarial projetada para automatizar a ingestão de dados financeiros. Utilizando modelos avançados de IA (Gemini 2.0 Flash), o sistema processa imagens e PDFs, extraindo informações críticas com precisão e velocidade inigualáveis.
 
 ---
 
-## ✨ Funcionalidades Principais
+## 🚀 Arquitetura do Sistema
 
-### 🧠 Inteligência Artificial de Elite
-- **Extração Automática**: Identificação inteligente de Contas a Pagar e Receber.
-- **Análise Multi-Documento**: Processamento em lote de centenas de arquivos simultaneamente.
-- **Sistema Anti-Cache**: Algoritmo proprietário para garantir respostas únicas e precisas da API Gemini.
+O projeto é dividido em dois ecossistemas principais, garantindo escalabilidade e separação de responsabilidades:
 
-### 📱 Integração WhatsApp (Evolution API)
-- **Processamento Inbound**: Receba comprovantes e notas via WhatsApp e processe-os automaticamente.
-- **Feedback em Tempo Real**: Respostas automáticas para usuários confirmando a leitura dos dados.
+### 📱 Frontend (React + Vite)
+Uma Single Page Application (SPA) moderna, focada em UX/UI premium:
+- **Dashboards Contextuais**: Visão Master (Gestão total) vs Visão Usuário (Histórico pessoal).
+- **Processamento em Lote**: Interface robusta para upload e análise de centenas de arquivos simultaneamente.
+- **Real-time Stats**: Dashboards dinâmicos com Chart.js para monitoramento de volume e performance.
+- **Design System**: Construído com Tailwind CSS e Framer Motion para animações fluidas.
 
-### 📊 Dashboards Especializados
-- **Painel Master**: Visão consolidada de todas as análises, métricas de performance da IA e gestão de usuários.
-- **Painel do Usuário**: Gestão simplificada dos próprios envios e histórico de processamento.
-- **Gráficos Dinâmicos**: Visualização de tendências em tempo real com Chart.js.
-
----
-
-## 🛠️ Stack Tecnológica
-
-### Frontend
-- **React 18** com **Vite** (Build ultra-rápido)
-- **Tailwind CSS** (Design responsivo e premium)
-- **Framer Motion** (Micro-interações e animações suaves)
-- **Lucide React** (Set de ícones moderno)
-- **Chart.js** (Visualização de dados analíticos)
-
-### Backend
-- **Node.js** & **Express**
-- **Supabase** (PostgreSQL, Auth, RLS e Realtime)
-- **Google Gemini API** (O cérebro da extração)
-- **Evolution API** (Integração WhatsApp)
-- **Sharp & Multer** (Processamento e upload de arquivos)
+### ⚙️ Backend (Node.js + Express)
+API escalável que orquestra a inteligência da aplicação:
+- **Multi-Provider AI**: Engine flexível que utiliza **Gemini 2.0 Flash** (primário), **OpenAI** e **Nexus** (OpenRoute) como fallbacks.
+- **Integração WhatsApp**: Conexão nativa com **Evolution API** para processamento automático de mídias enviadas via chat.
+- **Sistema de Créditos**: Gestão mensal automatizada de uso por usuário (limite padrão de 2500 requisições).
+- **Segurança Hardened**: Implementação de RLS (Row Level Security) no Supabase, Rate Limiting e auditoria completa de logs.
 
 ---
 
-## 📂 Estrutura do Projeto
+## ✨ Funcionalidades Técnicas
+
+- **Extração Inteligente**: Reconhecimento automático de Ordens de Serviço, Comprovantes STONE, Boletos, Notas Fiscais e Recibos PIX.
+- **Sistema Anti-Cache**: Algoritmo que quebra o cache agressivo de IA para garantir que cada re-análise seja independente e precisa.
+- **Gestão de Sessões WHATSAPP**: Controle de instâncias QRCode e monitoramento de conexão via dashboard.
+- **Auditoria de Dados**: Logs detalhados de cada transação, erro e sucesso de processamento para conformidade.
+
+---
+
+## 📂 Estrutura de Diretórios Real
 
 ```text
 ├── backend/
-│   ├── src/config/        # Gerenciamento de chaves e envs
-│   ├── src/controllers/   # Lógica das rotas (Admin, WhatsApp, etc)
-│   ├── src/services/      # Conectores de IA e Evolution API
-│   └── migrations/        # Esquemas SQL para Supabase
+│   ├── src/controllers/   # Lógica de endpoints (Análise, Admin, WhatsApp)
+│   ├── src/services/      # Core logic (AI Factory, Credits, Evolution Service)
+│   ├── src/middleware/    # Segurança (Auth, Rate Limit, Role Validation)
+│   └── migrations/        # Evolução do banco de dados (SQL RPCs e tabelas)
 ├── frontend/
-│   ├── src/components/    # UI Reutilizável (Header, Charts)
-│   ├── src/pages/         # Páginas da aplicação (Master, User, WhatsApp)
-│   └── src/utils/         # Helpers e clientes de API
-├── .github/workflows/     # CI/CD (Testes automatizados)
-└── docker-compose.yml     # Configuração para deploy EasyPanel/Docker
+│   ├── src/pages/         # HomePage, DashboardPage, WhatsAppPage, etc.
+│   ├── src/components/    # Header unificado, Gráficos, Tabelas dinâmicas
+│   └── src/utils/         # authenticatedFetch e clientes de API
+└── .github/workflows/     # CI Automatizado (tests.yml)
 ```
 
 ---
 
-## ⚙️ Configuração e Instalação
+## 🛠️ Configuração de Ambiente
 
-### Pré-requisitos
-- Node.js 18+
-- Instância Supabase (Self-hosted ou Cloud)
-- Key da API Google Gemini
+O projeto utiliza variáveis de ambiente segregadas por ambiente.
 
-### Passo a Passo
+### Requisitos Mínimos
+- Node.js 18 ou superior.
+- Docker & Docker Compose (para deploy simplificado).
+- Instância Supabase configurada com os RPCs das migrations.
 
-1. **Clone o projeto:**
-   ```bash
-   git clone https://github.com/DeckDev-RC/teste.git
-   cd LeitorDeDoc
-   ```
-
-2. **Backend:**
-   ```bash
-   cd backend
-   cp .env.example .env  # Configure suas credenciais
-   npm install
-   npm start
-   ```
-
-3. **Frontend:**
-   ```bash
-   cd ../frontend
-   npm install
-   npm run dev
-   ```
+### Instalação Rápida
+1.  **Backend**: `cd backend && npm install && npm start`
+2.  **Frontend**: `cd frontend && npm install && npm run dev`
 
 ---
 
-## 🔐 Segurança e Boas Práticas
+## 🔐 Segurança e Compliance
 
-- **Segurança do Histórico**: Todo o histórico de commits foi auditado e limpo de credenciais sensíveis via `git filter-branch`.
-- **Row Level Security (RLS)**: Políticas rigorosas no Supabase garantem que um usuário só acesse seus próprios dados.
-- **Gestão de Chaves**: Implementado um `apiKeyManager` para rotação e fallback de chaves de IA.
-
----
-
-## 📄 Licença
-
-Este projeto está sob a licença MIT. Veja o arquivo [LICENSE](LICENSE) para detalhes.
+Este projeto segue padrões rigorosos de segurança:
+- **Clean Git History**: Histórico livre de credenciais sensíveis.
+- **Protected Endpoints**: Rotas administrativas protegidas por validação de Role (Master/Admin).
+- **Environment Driven**: Nenhuma chave de API é hardcoded no código fonte.
 
 ---
 
-## 🤝 Contribuição
+## 📝 Licença
+Desenvolvido para uso profissional sob a licença MIT. 
 
-Contribuições são o que fazem a comunidade open source um lugar incrível para aprender, inspirar e criar. Qualquer contribuição que você fizer será **muito apreciada**.
-
-1. Faça um Fork do projeto
-2. Crie uma Branch para sua Feature (`git checkout -b feature/IncredibleFeature`)
-3. Adicione suas mudanças (`git commit -m 'Add some IncredibleFeature'`)
-4. Faça o Push para a Branch (`git push origin feature/IncredibleFeature`)
-5. Abra um Pull Request
-
----
-
-<p align="center">Desenvolvido com ❤️ para a comunidade BPO</p>
+<p align="center"><b>Leitor de Docs BPO - Inteligência que Liberta o seu Tempo</b></p>
