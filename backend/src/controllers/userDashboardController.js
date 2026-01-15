@@ -34,37 +34,41 @@ export const getUserStats = async (req, res) => {
             .from('analysis_logs')
             .select('*', { count: 'exact', head: true })
             .eq('user_id', userId)
-            .gte('timestamp', startOfDay);
+            .gte('created_at', startOfDay);
 
         // Análises de ontem (para calcular mudança)
         const { count: analysesYesterday } = await supabaseAdmin
             .from('analysis_logs')
             .select('*', { count: 'exact', head: true })
             .eq('user_id', userId)
-            .gte('timestamp', startOfYesterday)
-            .lt('timestamp', startOfDay);
+            .gte('created_at', startOfYesterday)
+            .lt('created_at', startOfDay);
 
         // Total do mês
         const { count: monthTotal } = await supabaseAdmin
             .from('analysis_logs')
             .select('*', { count: 'exact', head: true })
             .eq('user_id', userId)
-            .gte('timestamp', startOfMonth);
+            .gte('created_at', startOfMonth);
 
         // Análises com sucesso este mês
         const { count: successCount } = await supabaseAdmin
             .from('analysis_logs')
             .select('*', { count: 'exact', head: true })
             .eq('user_id', userId)
-            .gte('timestamp', startOfMonth)
+            .gte('created_at', startOfMonth)
             .eq('success', true);
 
-        // Créditos do usuário
-        const { data: profile } = await supabaseAdmin
-            .from('profiles')
-            .select('credits')
-            .eq('id', userId)
+        // Créditos do usuário do mês atual
+        const currentMonthYear = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+        const { data: creditsData } = await supabaseAdmin
+            .from('user_credits')
+            .select('credits_limit, credits_used')
+            .eq('user_id', userId)
+            .eq('month_year', currentMonthYear)
             .single();
+
+        const remainingCredits = (creditsData?.credits_limit || 2500) - (creditsData?.credits_used || 0);
 
         // Calcular taxa de sucesso
         const successRate = monthTotal > 0 ? Math.round((successCount / monthTotal) * 100) : 100;
@@ -79,7 +83,7 @@ export const getUserStats = async (req, res) => {
             data: {
                 analysesToday: analysesToday || 0,
                 analysesTodayChange,
-                credits: profile?.credits || 0,
+                credits: remainingCredits,
                 monthTotal: monthTotal || 0,
                 successRate
             }
@@ -148,21 +152,31 @@ export const getUserCredits = async (req, res) => {
             return res.status(500).json({ success: false, error: 'Supabase não configurado' });
         }
 
-        const { data: profile, error } = await supabaseAdmin
+        const currentMonthYear = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`;
+        const { data: creditData, error } = await supabaseAdmin
+            .from('user_credits')
+            .select('credits_limit, credits_used')
+            .eq('user_id', userId)
+            .eq('month_year', currentMonthYear)
+            .single();
+
+        const { data: profile } = await supabaseAdmin
             .from('profiles')
-            .select('credits, role')
+            .select('role')
             .eq('id', userId)
             .single();
 
-        if (error) {
+        if (error && error.code !== 'PGRST116') {
             console.error('Erro ao buscar créditos:', error);
             return res.status(500).json({ success: false, error: 'Erro ao buscar créditos' });
         }
 
+        const remainingCredits = (creditData?.credits_limit || 2500) - (creditData?.credits_used || 0);
+
         res.json({
             success: true,
             data: {
-                credits: profile?.credits || 0,
+                credits: remainingCredits,
                 unlimited: profile?.role === 'master' || profile?.role === 'admin'
             }
         });
