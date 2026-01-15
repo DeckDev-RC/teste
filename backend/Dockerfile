@@ -6,6 +6,7 @@ WORKDIR /app
 # Instalar dependências do sistema para canvas
 RUN apt-get update && apt-get install -y \
     build-essential \
+    git \
     libcairo2-dev \
     libpango1.0-dev \
     libjpeg-dev \
