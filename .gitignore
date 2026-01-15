@@ -65,3 +65,9 @@ cache/
 # Editor configs
 .cursor/
 .cursor-tuning/
+# Configurações sensíveis - Evolution/Supabase/Audit
+evolution*
+*.yaml
+*.base64.txt
+SUPABASE_ENV_BACKEND.txt
+secrets_audit.csv
