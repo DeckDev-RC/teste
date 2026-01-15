@@ -8,6 +8,7 @@ import makeWASocket, {
 } from '@whiskeysockets/baileys';
 import { createClient } from '@supabase/supabase-js';
 import pino from 'pino';
+import QRCode from 'qrcode';
 import '../config/env.js';
 
 // Configuração do Supabase Admin para persistência
@@ -132,7 +133,11 @@ class WhatsAppInternalService {
 
             if (qr) {
                 console.log(`📱 Novo QR Code gerado para: ${instanceId}`);
-                this.results.set(instanceId, { ...this.results.get(instanceId), qr });
+                QRCode.toDataURL(qr).then(url => {
+                    this.results.set(instanceId, { ...this.results.get(instanceId), qr: url });
+                }).catch(err => {
+                    console.error('❌ Erro ao gerar DataURL do QR:', err);
+                });
             }
 
             if (connection === 'close') {
