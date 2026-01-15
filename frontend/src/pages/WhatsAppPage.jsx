@@ -249,444 +249,357 @@ export default function WhatsAppPage() {
                 <div className="absolute -bottom-40 -right-40 w-[700px] h-[700px] bg-brand-blue/3 rounded-full blur-[140px]" />
             </div>
 
-            <div className="relative z-10 max-w-4xl mx-auto">
+            <div className="relative z-10 max-w-7xl mx-auto">
                 {/* Header */}
                 <motion.div
                     initial={{ opacity: 0, y: -20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="flex items-center gap-4 mb-6"
+                    className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8"
                 >
-                    <button
-                        onClick={() => navigate('/user-dashboard')}
-                        className="p-2 bg-dark-700 rounded-xl hover:bg-dark-600 transition-colors"
-                    >
-                        <ArrowLeft className="w-5 h-5 text-light-200" />
-                    </button>
-                    <div>
-                        <h1 className="text-2xl font-bold text-light-100 flex items-center gap-3">
-                            <MessageSquare className="w-6 h-6 text-emerald-500" />
-                            WhatsApp Integration
-                        </h1>
-                        <p className="text-dark-500 text-sm mt-1">
-                            Conecte seu WhatsApp e monitore grupos automaticamente
-                        </p>
-                    </div>
-                </motion.div>
-
-                {/* Stepper */}
-                <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.1 }}
-                    className="glass rounded-2xl p-4 mb-6"
-                >
-                    <div className="flex items-center justify-between">
-                        {steps.map((step, index) => {
-                            const StepIcon = step.icon;
-                            const isCompleted = index < currentStep;
-                            const isCurrent = index === currentStep;
-
-                            return (
-                                <div key={step.label} className="flex items-center flex-1">
-                                    <div className="flex flex-col items-center">
-                                        <div className={`
-                                            w-10 h-10 rounded-full flex items-center justify-center transition-all
-                                            ${isCompleted ? 'bg-emerald-500 text-white' : ''}
-                                            ${isCurrent ? 'bg-emerald-500/20 text-emerald-400 ring-2 ring-emerald-500/50' : ''}
-                                            ${!isCompleted && !isCurrent ? 'bg-dark-700 text-dark-500' : ''}
-                                        `}>
-                                            {isCompleted ? (
-                                                <Check className="w-5 h-5" />
-                                            ) : (
-                                                <StepIcon className="w-5 h-5" />
-                                            )}
-                                        </div>
-                                        <span className={`text-xs mt-1 ${isCurrent ? 'text-emerald-400 font-medium' : 'text-dark-500'}`}>
-                                            {step.label}
-                                        </span>
-                                    </div>
-                                    {index < steps.length - 1 && (
-                                        <div className={`flex-1 h-0.5 mx-2 ${index < currentStep ? 'bg-emerald-500' : 'bg-dark-700'}`} />
-                                    )}
-                                </div>
-                            );
-                        })}
-                    </div>
-                </motion.div>
-
-                {/* Status Card - Quando conectado */}
-                {instance && status === 'connected' && (
-                    <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.2 }}
-                        className="glass rounded-2xl p-6 mb-6"
-                    >
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-4">
-                                <div className="w-14 h-14 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
-                                    <Wifi className="w-7 h-7 text-emerald-500" />
-                                </div>
-                                <div>
-                                    <div className="flex items-center gap-2">
-                                        <p className="text-light-100 font-bold text-lg">Conectado</p>
-                                        <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
-                                    </div>
-                                    <p className="text-dark-400 text-sm">
-                                        {instance?.phone_number || 'Número vinculado'}
-                                    </p>
-                                </div>
-                            </div>
-                            <button
-                                onClick={deleteInstance}
-                                className="p-3 text-red-400 hover:bg-red-500/10 rounded-xl transition-colors"
-                                title="Desconectar"
-                            >
-                                <Trash2 className="w-5 h-5" />
-                            </button>
-                        </div>
-
-                        {/* Stats */}
-                        <div className="grid grid-cols-3 gap-4 mt-6 pt-6 border-t border-dark-700">
-                            <div className="text-center">
-                                <p className="text-2xl font-bold text-light-100">{stats.groups}</p>
-                                <p className="text-dark-500 text-xs">Grupos Monitorados</p>
-                            </div>
-                            <div className="text-center border-x border-dark-700">
-                                <p className="text-2xl font-bold text-light-100">{stats.docsToday}</p>
-                                <p className="text-dark-500 text-xs">Docs Hoje</p>
-                            </div>
-                            <div className="text-center">
-                                <div className="flex items-center justify-center gap-1">
-                                    <span className="w-2 h-2 bg-emerald-500 rounded-full" />
-                                    <p className="text-emerald-400 font-bold">Ativo</p>
-                                </div>
-                                <p className="text-dark-500 text-xs">Monitoramento</p>
-                            </div>
-                        </div>
-                    </motion.div>
-                )}
-
-                {/* Status Card - Quando desconectado */}
-                {instance && status !== 'connected' && (
-                    <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="glass rounded-2xl p-6 mb-6"
-                    >
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-4">
-                                <div className="w-12 h-12 bg-dark-700 border border-dark-600 rounded-xl flex items-center justify-center">
-                                    <WifiOff className="w-6 h-6 text-dark-500" />
-                                </div>
-                                <div>
-                                    <p className="text-light-100 font-medium">Desconectado</p>
-                                    <p className="text-dark-500 text-sm">Aguardando QR Code...</p>
-                                </div>
-                            </div>
-                            <button
-                                onClick={deleteInstance}
-                                className="p-2 text-red-400 hover:bg-red-500/10 rounded-xl transition-colors"
-                                title="Remover"
-                            >
-                                <Trash2 className="w-5 h-5" />
-                            </button>
-                        </div>
-                    </motion.div>
-                )}
-
-                {/* No instance - Create button */}
-                {!instance && (
-                    <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="glass rounded-2xl p-10 text-center"
-                    >
-                        <div className="w-20 h-20 bg-emerald-500/10 rounded-3xl flex items-center justify-center mx-auto mb-6">
-                            <Smartphone className="w-10 h-10 text-emerald-500" />
-                        </div>
-                        <h2 className="text-2xl font-bold text-light-100 mb-3">
-                            Conecte seu WhatsApp
-                        </h2>
-                        <p className="text-dark-400 text-sm mb-8 max-w-md mx-auto">
-                            Vincule seu número para monitorar grupos e processar documentos automaticamente com IA
-                        </p>
+                    <div className="flex items-center gap-4">
                         <button
-                            onClick={createInstance}
-                            disabled={creatingInstance}
-                            className="px-8 py-4 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-2xl transition-all flex items-center gap-3 mx-auto disabled:opacity-50 shadow-lg shadow-emerald-500/20"
+                            onClick={() => navigate('/user-dashboard')}
+                            className="p-2 bg-dark-700/50 rounded-xl hover:bg-dark-600 transition-colors"
                         >
-                            {creatingInstance ? (
-                                <Loader2 className="w-5 h-5 animate-spin" />
-                            ) : (
-                                <Power className="w-5 h-5" />
-                            )}
-                            {creatingInstance ? 'Criando...' : 'Iniciar Conexão'}
+                            <ArrowLeft className="w-5 h-5 text-light-200" />
                         </button>
-                    </motion.div>
-                )}
-
-                {/* QR Code */}
-                {instance && status !== 'connected' && (
-                    <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="glass rounded-2xl p-8 text-center"
-                    >
-                        <div className="w-16 h-16 bg-brand-blue/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                            <QrCode className="w-8 h-8 text-brand-blue" />
+                        <div>
+                            <h1 className="text-2xl font-bold text-light-100 flex items-center gap-3">
+                                <MessageSquare className="w-6 h-6 text-emerald-500" />
+                                WhatsApp Integration
+                            </h1>
+                            <p className="text-dark-500 text-sm mt-1">
+                                Gerencie sua conexão, grupos e monitore atividades em tempo real
+                            </p>
                         </div>
-                        <h2 className="text-xl font-bold text-light-100 mb-2">
-                            Escaneie o QR Code
-                        </h2>
-                        <p className="text-dark-400 text-sm mb-6">
-                            WhatsApp → Dispositivos conectados → Vincular dispositivo
-                        </p>
+                    </div>
 
-                        <div className="flex justify-center">
-                            {qrCode ? (
-                                <motion.div
-                                    initial={{ scale: 0.8, opacity: 0 }}
-                                    animate={{ scale: 1, opacity: 1 }}
-                                    className="bg-white p-4 rounded-2xl shadow-xl"
-                                >
-                                    <img
-                                        src={qrCode.startsWith('data:') ? qrCode : `data:image/png;base64,${qrCode}`}
-                                        alt="QR Code"
-                                        className="w-52 h-52"
-                                    />
-                                </motion.div>
-                            ) : (
-                                <div className="w-52 h-52 bg-dark-700 rounded-2xl flex items-center justify-center">
-                                    <Loader2 className="w-10 h-10 text-dark-500 animate-spin" />
-                                </div>
-                            )}
-                        </div>
-
-                        <div className="flex items-center justify-center gap-2 mt-6 text-dark-500 text-sm">
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                            Aguardando conexão...
-                        </div>
-                    </motion.div>
-                )}
-
-                {/* Groups Section with Tabs */}
-                {instance && status === 'connected' && (
-                    <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.3 }}
-                        className="glass rounded-2xl overflow-hidden mb-6"
-                    >
-                        {/* Header with Tabs */}
-                        <div className="p-4 border-b border-dark-700">
-                            <div className="flex items-center justify-between mb-4">
-                                <div className="flex items-center gap-3">
-                                    <Users className="w-5 h-5 text-brand-blue" />
-                                    <h2 className="text-lg font-bold text-light-100">Grupos</h2>
-                                </div>
-                                <button
-                                    onClick={() => loadGroups(instance.instance_id)}
-                                    disabled={loadingGroups}
-                                    className="p-2 text-dark-400 hover:text-brand-blue transition-colors rounded-lg hover:bg-dark-700"
-                                >
-                                    <RefreshCw className={`w-4 h-4 ${loadingGroups ? 'animate-spin' : ''}`} />
-                                </button>
-                            </div>
-
-                            {/* Tabs */}
-                            <div className="flex gap-2">
-                                <button
-                                    onClick={() => setGroupsTab('monitored')}
-                                    className={`px-4 py-2 rounded-xl text-sm font-medium transition-all flex items-center gap-2 ${groupsTab === 'monitored'
-                                        ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
-                                        : 'bg-dark-700 text-dark-400 hover:text-light-200'
-                                        }`}
-                                >
-                                    <Check className="w-4 h-4" />
-                                    Monitorados
-                                    <span className="px-1.5 py-0.5 bg-emerald-500/20 text-emerald-400 text-xs rounded-full">
-                                        {monitoredGroupsList.length}
-                                    </span>
-                                </button>
-                                <button
-                                    onClick={() => setGroupsTab('all')}
-                                    className={`px-4 py-2 rounded-xl text-sm font-medium transition-all flex items-center gap-2 ${groupsTab === 'all'
-                                        ? 'bg-brand-blue/20 text-brand-blue border border-brand-blue/30'
-                                        : 'bg-dark-700 text-dark-400 hover:text-light-200'
-                                        }`}
-                                >
-                                    <Users className="w-4 h-4" />
-                                    Todos
-                                    <span className="px-1.5 py-0.5 bg-dark-600 text-dark-300 text-xs rounded-full">
-                                        {groups.length}
-                                    </span>
-                                </button>
-                            </div>
-                        </div>
-
-                        {/* Tab Content */}
-                        <div className="max-h-80 overflow-y-auto">
-                            {groupsTab === 'monitored' ? (
-                                monitoredGroupsList.length === 0 ? (
-                                    <div className="p-8 text-center">
-                                        <Users className="w-12 h-12 text-dark-600 mx-auto mb-3" />
-                                        <p className="text-dark-400 font-medium">Nenhum grupo monitorado</p>
-                                        <p className="text-dark-500 text-sm mt-1">Vá em "Todos" para adicionar grupos</p>
+                    {/* Compact Stepper - Only show when not connected */}
+                    {status !== 'connected' && (
+                        <div className="flex bg-dark-800/50 p-2 rounded-xl backdrop-blur-sm">
+                            {steps.map((step, index) => {
+                                const StepIcon = step.icon;
+                                const isCompleted = index < currentStep;
+                                const isCurrent = index === currentStep;
+                                return (
+                                    <div key={step.label} className={`flex items-center px-3 py-1.5 rounded-lg ${isCurrent ? 'bg-dark-700' : ''}`}>
+                                        <StepIcon className={`w-4 h-4 mr-2 ${isCompleted || isCurrent ? 'text-emerald-500' : 'text-dark-500'}`} />
+                                        <span className={`text-xs font-medium ${isCompleted || isCurrent ? 'text-light-200' : 'text-dark-500'}`}>{step.label}</span>
+                                        {index < steps.length - 1 && <ChevronRight className="w-3 h-3 text-dark-600 ml-2" />}
                                     </div>
-                                ) : (
-                                    <div className="divide-y divide-dark-700/50">
-                                        {monitoredGroupsList.map((group) => (
-                                            <div
-                                                key={group.jid}
-                                                className="p-4 flex items-center justify-between hover:bg-dark-800/30 transition-colors"
-                                            >
-                                                <div className="flex items-center gap-3">
-                                                    <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
-                                                        <Users className="w-5 h-5 text-emerald-500" />
-                                                    </div>
-                                                    <div>
-                                                        <p className="text-light-100 font-medium text-sm">{group.name}</p>
-                                                        <p className="text-emerald-400 text-xs flex items-center gap-1">
-                                                            <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full" />
-                                                            Monitorando
-                                                        </p>
-                                                    </div>
-                                                </div>
-                                                <button
-                                                    onClick={() => toggleMonitor(group, false)}
-                                                    className="p-2 text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
-                                                    title="Parar de monitorar"
-                                                >
-                                                    <X className="w-4 h-4" />
-                                                </button>
-                                            </div>
-                                        ))}
-                                    </div>
-                                )
-                            ) : (
-                                groups.length === 0 ? (
-                                    <div className="p-8 text-center">
-                                        <Users className="w-12 h-12 text-dark-600 mx-auto mb-3" />
-                                        <p className="text-dark-400 font-medium">Nenhum grupo encontrado</p>
-                                    </div>
-                                ) : (
-                                    <div className="divide-y divide-dark-700/50">
-                                        {/* Monitored first, then others */}
-                                        {[...monitoredGroupsList, ...otherGroupsList].map((group) => {
-                                            const isMonitored = monitoredGroups.includes(group.jid);
-                                            return (
-                                                <div
-                                                    key={group.jid}
-                                                    className="p-3 flex items-center justify-between hover:bg-dark-800/30 transition-colors"
-                                                >
-                                                    <div className="flex items-center gap-3">
-                                                        <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${isMonitored
-                                                            ? 'bg-emerald-500/10 border border-emerald-500/20'
-                                                            : 'bg-dark-700'
-                                                            }`}>
-                                                            <Users className={`w-4 h-4 ${isMonitored ? 'text-emerald-500' : 'text-dark-500'}`} />
-                                                        </div>
-                                                        <p className="text-light-100 text-sm font-medium truncate max-w-[180px]">
-                                                            {group.name}
-                                                        </p>
-                                                    </div>
-                                                    <button
-                                                        onClick={() => toggleMonitor(group, !isMonitored)}
-                                                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${isMonitored
-                                                            ? 'bg-emerald-500/10 text-emerald-400'
-                                                            : 'bg-dark-700 text-dark-400 hover:text-light-200'
-                                                            }`}
-                                                    >
-                                                        {isMonitored ? '✓' : 'Monitorar'}
-                                                    </button>
-                                                </div>
-                                            );
-                                        })}
-                                    </div>
-                                )
-                            )}
+                                );
+                            })}
                         </div>
-                    </motion.div>
-                )}
+                    )}
+                </motion.div>
 
-                {/* Recent Documents */}
-                {instance && status === 'connected' && recentDocs.length > 0 && (
-                    <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.4 }}
-                        className="glass rounded-2xl overflow-hidden"
-                    >
-                        <div className="p-5 border-b border-dark-700 flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                                <FileText className="w-5 h-5 text-amber-500" />
-                                <h2 className="text-lg font-bold text-light-100">Últimos Documentos</h2>
-                            </div>
-                            <button
-                                onClick={() => navigate('/history')}
-                                className="text-brand-blue text-sm font-medium hover:underline"
-                            >
-                                Ver todos
-                            </button>
-                        </div>
+                {/* Main Content Grid */}
+                <div className="space-y-6">
 
-                        <div className="divide-y divide-dark-700/50">
-                            {recentDocs.slice(0, 5).map((doc) => (
-                                <div key={doc.id} className="p-4 flex items-center justify-between">
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 bg-dark-700 rounded-lg flex items-center justify-center">
-                                            {doc.file_type?.includes('image') ? (
-                                                <Image className="w-5 h-5 text-purple-400" />
-                                            ) : (
-                                                <FileText className="w-5 h-5 text-blue-400" />
-                                            )}
+                    {/* Top Section: Connection Status & Stats */}
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        {/* Connection Card */}
+                        <motion.div
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className="lg:col-span-2 glass rounded-2xl p-6 relative overflow-hidden"
+                        >
+                            {status === 'connected' && instance ? (
+                                <div className="flex items-center justify-between relative z-10">
+                                    <div className="flex items-center gap-6">
+                                        <div className="w-16 h-16 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center shadow-[0_0_15px_rgba(16,185,129,0.2)]">
+                                            <Wifi className="w-8 h-8 text-emerald-500" />
                                         </div>
                                         <div>
-                                            <p className="text-light-100 text-sm font-medium truncate max-w-[200px]">
-                                                {doc.file_name || 'Documento'}
-                                            </p>
-                                            <p className="text-dark-500 text-xs">
-                                                {new Date(doc.created_at).toLocaleString('pt-BR', {
-                                                    day: '2-digit',
-                                                    month: '2-digit',
-                                                    hour: '2-digit',
-                                                    minute: '2-digit'
-                                                })}
+                                            <div className="flex items-center gap-3 mb-1">
+                                                <h2 className="text-xl font-bold text-light-100">Conectado</h2>
+                                                <span className="px-2 py-0.5 bg-emerald-500/20 text-emerald-400 text-xs font-bold rounded-full border border-emerald-500/20 flex items-center gap-1.5">
+                                                    <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
+                                                    ONLINE
+                                                </span>
+                                            </div>
+                                            <p className="text-dark-400 font-mono">
+                                                {instance.phone_number ? `+${instance.phone_number.split('@')[0]}` : 'Número vinculado'}
                                             </p>
                                         </div>
                                     </div>
-                                    <div className="flex items-center gap-4">
-                                        {doc.drive_url && (
-                                            <a
-                                                href={doc.drive_url}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="p-2 hover:bg-dark-700/50 rounded-lg text-brand-blue transition-colors"
-                                                title="Ver no Google Drive"
+
+                                    <button
+                                        onClick={deleteInstance}
+                                        className="px-4 py-2 text-red-400 hover:bg-red-500/10 border border-red-500/20 rounded-xl transition-colors flex items-center gap-2 text-sm font-medium"
+                                    >
+                                        <Trash2 className="w-4 h-4" />
+                                        Desconectar
+                                    </button>
+                                </div>
+                            ) : (
+                                // Disconnected State
+                                <div className="flex flex-col md:flex-row items-center gap-8">
+                                    {!instance && (
+                                        <div className="flex-1 text-center md:text-left">
+                                            <div className="w-16 h-16 bg-dark-700/50 rounded-2xl flex items-center justify-center mb-4 mx-auto md:mx-0">
+                                                <Smartphone className="w-8 h-8 text-dark-400" />
+                                            </div>
+                                            <h3 className="text-xl font-bold text-light-100 mb-2">Conectar Nova Instância</h3>
+                                            <p className="text-dark-400 text-sm mb-6">Escaneie o QR Code para sincronizar seus grupos.</p>
+                                            <button
+                                                onClick={createInstance}
+                                                disabled={creatingInstance}
+                                                className="px-6 py-3 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-xl flex items-center gap-2 mx-auto md:mx-0 transition-all"
                                             >
-                                                <ExternalLink className="w-4 h-4" />
-                                            </a>
-                                        )}
-                                        <div className={`flex items-center gap-1.5 text-xs font-medium ${doc.status === 'completed' ? 'text-emerald-400' :
-                                            doc.status === 'processing' ? 'text-amber-400' :
-                                                doc.status === 'failed' ? 'text-red-400' :
-                                                    'text-dark-400'
-                                            }`}>
-                                            {doc.status === 'completed' && <CheckCircle className="w-4 h-4" />}
-                                            {doc.status === 'processing' && <Loader2 className="w-4 h-4 animate-spin" />}
-                                            {doc.status === 'failed' && <AlertCircle className="w-4 h-4" />}
-                                            {doc.status === 'pending' && <Clock className="w-4 h-4" />}
-                                            {doc.status === 'completed' ? 'Processado' :
-                                                doc.status === 'processing' ? 'Processando' :
-                                                    doc.status === 'failed' ? 'Falhou' : 'Pendente'}
+                                                {creatingInstance ? <Loader2 className="w-5 h-5 animate-spin" /> : <Power className="w-5 h-5" />}
+                                                Gerar QR Code
+                                            </button>
                                         </div>
+                                    )}
+
+                                    {(instance || creatingInstance) && (
+                                        <div className="flex-1 flex flex-col items-center justify-center p-4 bg-white/5 rounded-xl border border-white/10">
+                                            {qrCode ? (
+                                                <div className="bg-white p-3 rounded-xl shadow-lg">
+                                                    <img
+                                                        src={qrCode.startsWith('data:') ? qrCode : `data:image/png;base64,${qrCode}`}
+                                                        alt="QR Code"
+                                                        className="w-48 h-48"
+                                                    />
+                                                </div>
+                                            ) : (
+                                                <div className="w-48 h-48 flex items-center justify-center text-dark-500">
+                                                    <Loader2 className="w-8 h-8 animate-spin" />
+                                                </div>
+                                            )}
+                                            <p className="text-dark-400 text-xs mt-3 flex items-center gap-2">
+                                                <Smartphone className="w-3 h-3" />
+                                                Abra o WhatsApp &gt; Aparelhos Conectados
+                                            </p>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
+                            {/* Decorative Background for Card */}
+                            <div className="absolute right-0 top-0 w-64 h-full bg-gradient-to-l from-emerald-500/10 to-transparent pointer-events-none" />
+                        </motion.div>
+
+                        {/* Stats Card */}
+                        <motion.div
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.1 }}
+                            className="glass rounded-2xl p-6 flex flex-col justify-center"
+                        >
+                            <h3 className="text-lg font-bold text-light-100 mb-6 flex items-center gap-2">
+                                <Sparkles className="w-5 h-5 text-amber-400" />
+                                Resumo de Hoje
+                            </h3>
+                            <div className="space-y-6">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center">
+                                            <FileText className="w-5 h-5 text-blue-500" />
+                                        </div>
+                                        <div className="text-sm text-dark-300">Documentos</div>
+                                    </div>
+                                    <span className="text-2xl font-bold text-light-100">{stats.docsToday}</span>
+                                </div>
+                                <div className="flex items-center justify-between border-t border-dark-700/50 pt-4">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-10 h-10 rounded-lg bg-emerald-500/10 flex items-center justify-center">
+                                            <Users className="w-5 h-5 text-emerald-500" />
+                                        </div>
+                                        <div className="text-sm text-dark-300">Grupos Ativos</div>
+                                    </div>
+                                    <span className="text-2xl font-bold text-light-100">{stats.groups}</span>
+                                </div>
+                            </div>
+                        </motion.div>
+                    </div>
+
+                    {/* Bottom Split Section: Groups & Docs */}
+                    {status === 'connected' && (
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 h-[600px]">
+
+                            {/* Left Col: Groups Manager */}
+                            <motion.div
+                                initial={{ opacity: 0, x: -20 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                transition={{ delay: 0.2 }}
+                                className="glass rounded-2xl flex flex-col overflow-hidden h-full border border-dark-700/50 shadow-xl"
+                            >
+                                <div className="p-5 border-b border-dark-700 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-dark-800/30">
+                                    <div className="flex items-center gap-3">
+                                        <Users className="w-5 h-5 text-emerald-500" />
+                                        <h2 className="text-lg font-bold text-light-100">Gerenciar Grupos</h2>
+                                    </div>
+
+                                    <div className="flex bg-dark-900/50 p-1 rounded-lg">
+                                        <button
+                                            onClick={() => setGroupsTab('monitored')}
+                                            className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all ${groupsTab === 'monitored'
+                                                    ? 'bg-emerald-500 text-white shadow-lg'
+                                                    : 'text-dark-400 hover:text-light-200'
+                                                }`}
+                                        >
+                                            Monitorados ({monitoredGroupsList.length})
+                                        </button>
+                                        <button
+                                            onClick={() => setGroupsTab('all')}
+                                            className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all ${groupsTab === 'all'
+                                                    ? 'bg-brand-blue text-white shadow-lg'
+                                                    : 'text-dark-400 hover:text-light-200'
+                                                }`}
+                                        >
+                                            Todos ({groups.length})
+                                        </button>
                                     </div>
                                 </div>
-                            ))}
+
+                                <div className="flex-1 overflow-y-auto custom-scrollbar p-2">
+                                    {groupsTab === 'monitored' && monitoredGroupsList.length === 0 ? (
+                                        <div className="h-full flex flex-col items-center justify-center text-center p-8 opacity-50">
+                                            <Users className="w-16 h-16 text-dark-600 mb-4" />
+                                            <p className="text-dark-300 font-medium">Nenhum grupo sendo monitorado</p>
+                                            <p className="text-dark-500 text-sm mt-2">Selecione "Todos" para adicionar</p>
+                                        </div>
+                                    ) : (
+                                        <div className="space-y-1">
+                                            {(groupsTab === 'monitored' ? monitoredGroupsList : groups).map(group => {
+                                                const isMonitored = monitoredGroups.includes(group.jid);
+                                                return (
+                                                    <div
+                                                        key={group.jid}
+                                                        className={`p-3 rounded-xl flex items-center justify-between transition-all group ${isMonitored ? 'bg-emerald-500/5 border border-emerald-500/10' : 'hover:bg-dark-800/50 border border-transparent'
+                                                            }`}
+                                                    >
+                                                        <div className="flex items-center gap-3 overflow-hidden">
+                                                            <div className={`w-10 h-10 rounded-lg flex-shrink-0 flex items-center justify-center font-bold text-lg ${isMonitored ? 'bg-emerald-500 text-white shadow-emerald-500/20 shadow-lg' : 'bg-dark-700 text-dark-400'
+                                                                }`}>
+                                                                {group.name.charAt(0).toUpperCase()}
+                                                            </div>
+                                                            <div className="min-w-0">
+                                                                <p className={`text-sm font-medium truncate ${isMonitored ? 'text-emerald-400' : 'text-light-200'}`}>
+                                                                    {group.name}
+                                                                </p>
+                                                                <p className="text-[10px] text-dark-500 truncate">{group.jid.split('@')[0]}</p>
+                                                            </div>
+                                                        </div>
+
+                                                        <button
+                                                            onClick={() => toggleMonitor(group, !isMonitored)}
+                                                            className={`p-2 rounded-lg transition-colors flex-shrink-0 ${isMonitored
+                                                                    ? 'text-red-400 hover:bg-red-500/10'
+                                                                    : 'text-dark-400 hover:text-emerald-400 hover:bg-emerald-500/10'
+                                                                }`}
+                                                        >
+                                                            {isMonitored ? <X className="w-4 h-4" /> : <Power className="w-4 h-4" />}
+                                                        </button>
+                                                    </div>
+                                                )
+                                            })}
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div className="p-3 border-t border-dark-700 bg-dark-800/20 text-center">
+                                    <button
+                                        onClick={() => loadGroups(instance.instance_id)}
+                                        disabled={loadingGroups}
+                                        className="text-xs text-dark-400 hover:text-light-200 flex items-center justify-center gap-2 w-full py-2 hover:bg-dark-700/50 rounded-lg transition-colors"
+                                    >
+                                        <RefreshCw className={`w-3 h-3 ${loadingGroups ? 'animate-spin' : ''}`} />
+                                        Atualizar Lista
+                                    </button>
+                                </div>
+                            </motion.div>
+
+                            {/* Right Col: Recent Activity */}
+                            <motion.div
+                                initial={{ opacity: 0, x: 20 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                transition={{ delay: 0.3 }}
+                                className="glass rounded-2xl flex flex-col overflow-hidden h-full border border-dark-700/50 shadow-xl"
+                            >
+                                <div className="p-5 border-b border-dark-700 flex items-center justify-between bg-dark-800/30">
+                                    <div className="flex items-center gap-3">
+                                        <div className="relative">
+                                            <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full animate-ping" />
+                                            <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full" />
+                                            <Smartphone className="w-5 h-5 text-brand-blue" />
+                                        </div>
+                                        <h2 className="text-lg font-bold text-light-100">Live Feed</h2>
+                                    </div>
+                                    <button onClick={() => loadRecentDocs()} className="text-dark-400 hover:text-brand-blue transition-colors">
+                                        <RefreshCw className="w-4 h-4" />
+                                    </button>
+                                </div>
+
+                                <div className="flex-1 overflow-y-auto custom-scrollbar p-0">
+                                    {recentDocs.length === 0 ? (
+                                        <div className="h-full flex flex-col items-center justify-center text-center p-8 opacity-50">
+                                            <FileText className="w-16 h-16 text-dark-600 mb-4" />
+                                            <p className="text-dark-300 font-medium">Nenhum documento recente</p>
+                                        </div>
+                                    ) : (
+                                        <div className="divide-y divide-dark-700/50">
+                                            {recentDocs.map((doc) => (
+                                                <div key={doc.id} className="p-4 hover:bg-dark-800/30 transition-colors flex items-start gap-4">
+                                                    <div className={`mt-1 w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${doc.status === 'completed' ? 'bg-emerald-500/10 text-emerald-500' :
+                                                            doc.status === 'processing' ? 'bg-amber-500/10 text-amber-500' :
+                                                                'bg-dark-700 text-dark-400'
+                                                        }`}>
+                                                        {doc.file_type?.includes('image') ? <Image className="w-5 h-5" /> : <FileText className="w-5 h-5" />}
+                                                    </div>
+
+                                                    <div className="flex-1 min-w-0">
+                                                        <div className="flex items-start justify-between">
+                                                            <h4 className="text-sm font-medium text-light-100 truncate pr-4" title={doc.file_name}>
+                                                                {doc.file_name || 'Documento sem nome'}
+                                                            </h4>
+                                                            <span className="text-[10px] text-dark-500 whitespace-nowrap">
+                                                                {new Date(doc.created_at).toLocaleTimeString().slice(0, 5)}
+                                                            </span>
+                                                        </div>
+                                                        <p className="text-xs text-dark-400 mt-1 truncate">
+                                                            {doc.company || 'Sem empresa identificada'}
+                                                        </p>
+
+                                                        {/* Status Badge */}
+                                                        <div className="flex items-center gap-3 mt-3">
+                                                            <div className={`flex items-center gap-1.5 px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider ${doc.status === 'completed' ? 'bg-emerald-500/10 text-emerald-500' :
+                                                                    doc.status === 'processing' ? 'bg-amber-500/10 text-amber-500' :
+                                                                        doc.status === 'failed' ? 'bg-red-500/10 text-red-500' :
+                                                                            'bg-dark-700 text-dark-400'
+                                                                }`}>
+                                                                {doc.status === 'completed' && <CheckCircle className="w-3 h-3" />}
+                                                                {doc.status === 'processing' && <Loader2 className="w-3 h-3 animate-spin" />}
+                                                                {doc.status}
+                                                            </div>
+
+                                                            {doc.drive_url && (
+                                                                <a
+                                                                    href={doc.drive_url}
+                                                                    target="_blank"
+                                                                    className="text-xs text-brand-blue hover:underline flex items-center gap-1"
+                                                                >
+                                                                    Ver Arquivo <ExternalLink className="w-3 h-3" />
+                                                                </a>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                                <div className="p-3 border-t border-dark-700 bg-dark-800/20 text-center">
+                                    <button onClick={() => navigate('/history')} className="text-xs font-bold text-brand-blue hover:text-brand-blue/80 uppercase tracking-wider">
+                                        Ver Histórico Completo
+                                    </button>
+                                </div>
+                            </motion.div>
                         </div>
-                    </motion.div>
-                )}
+                    )}
+                </div>
             </div>
         </div>
     );
