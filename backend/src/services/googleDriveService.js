@@ -1,6 +1,6 @@
 import { google } from 'googleapis';
 import stream from 'stream';
-import './env.js';
+import '../config/env.js';
 
 class GoogleDriveService {
     constructor() {
