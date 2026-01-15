@@ -78,12 +78,12 @@ export default function BarChart({ data, title, label, className = '' }) {
                 borderWidth: 1,
                 padding: 12,
                 titleFont: {
-                    family: 'Poppins',
+                    family: 'Inter, sans-serif',
                     size: 13,
                     weight: 'bold'
                 },
                 bodyFont: {
-                    family: 'Poppins',
+                    family: 'Inter, sans-serif',
                     size: 12
                 }
             }
@@ -93,7 +93,7 @@ export default function BarChart({ data, title, label, className = '' }) {
                 ticks: {
                     color: '#6b6b6b',
                     font: {
-                        family: 'Poppins',
+                        family: 'Inter, sans-serif',
                         size: 9
                     }
                 },
@@ -105,7 +105,7 @@ export default function BarChart({ data, title, label, className = '' }) {
                 ticks: {
                     color: '#6b6b6b',
                     font: {
-                        family: 'Poppins',
+                        family: 'Inter, sans-serif',
                         size: 10
                     },
                     callback: (value) => value.toLocaleString('pt-BR')
@@ -123,7 +123,7 @@ export default function BarChart({ data, title, label, className = '' }) {
         <div className={`glass rounded-3xl p-8 ${className}`}>
             {title && (
                 <div className="flex items-center justify-between mb-8">
-                    <h3 className="text-sm font-bold text-light-100 uppercase tracking-widest">{title}</h3>
+                    <h3 className="text-[11px] font-black text-dark-500 uppercase tracking-[0.2em]">{title}</h3>
                 </div>
             )}
             <div style={{ height: '320px' }}>

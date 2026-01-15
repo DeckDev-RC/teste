@@ -86,8 +86,8 @@ export default function TimeSeriesChart({ data, title, className = '' }) {
                     usePointStyle: true,
                     pointStyle: 'circle',
                     font: {
-                        family: 'Poppins',
-                        size: 11,
+                        family: 'Inter, sans-serif',
+                        size: 10,
                         weight: '600'
                     },
                     padding: 20
@@ -107,12 +107,12 @@ export default function TimeSeriesChart({ data, title, className = '' }) {
                 boxPadding: 6,
                 usePointStyle: true,
                 titleFont: {
-                    family: 'Poppins',
+                    family: 'Inter, sans-serif',
                     size: 13,
                     weight: 'bold'
                 },
                 bodyFont: {
-                    family: 'Poppins',
+                    family: 'Inter, sans-serif',
                     size: 12
                 }
             }
@@ -122,7 +122,7 @@ export default function TimeSeriesChart({ data, title, className = '' }) {
                 ticks: {
                     color: '#6b6b6b',
                     font: {
-                        family: 'Poppins',
+                        family: 'Inter, sans-serif',
                         size: 10
                     }
                 },
@@ -134,7 +134,7 @@ export default function TimeSeriesChart({ data, title, className = '' }) {
                 ticks: {
                     color: '#6b6b6b',
                     font: {
-                        family: 'Poppins',
+                        family: 'Inter, sans-serif',
                         size: 10
                     },
                     callback: (value) => value.toLocaleString('pt-BR')
@@ -151,8 +151,8 @@ export default function TimeSeriesChart({ data, title, className = '' }) {
     return (
         <div className={`glass rounded-3xl p-8 ${className}`}>
             {title && (
-                <div className="flex items-center justify-between mb-6">
-                    <h3 className="text-sm font-bold text-light-100 uppercase tracking-widest">{title}</h3>
+                <div className="flex items-center justify-between mb-8">
+                    <h3 className="text-[11px] font-black text-dark-500 uppercase tracking-[0.2em]">{title}</h3>
                 </div>
             )}
             <div style={{ height: '320px' }}>

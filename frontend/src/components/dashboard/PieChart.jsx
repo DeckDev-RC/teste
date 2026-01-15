@@ -53,17 +53,17 @@ export default function PieChart({ data, title, className = '' }) {
         cutout: '65%', // High donut feel
         plugins: {
             legend: {
-                position: 'right',
+                position: 'bottom',
                 labels: {
                     color: '#a8a8a8',
                     usePointStyle: true,
                     pointStyle: 'circle',
                     font: {
-                        family: 'Poppins',
-                        size: 11,
+                        family: 'Inter, sans-serif',
+                        size: 10,
                         weight: '600'
                     },
-                    padding: 20
+                    padding: 15
                 }
             },
             title: {
@@ -79,12 +79,12 @@ export default function PieChart({ data, title, className = '' }) {
                 padding: 12,
                 cornerSize: 8,
                 titleFont: {
-                    family: 'Poppins',
+                    family: 'Inter, sans-serif',
                     size: 13,
                     weight: 'bold'
                 },
                 bodyFont: {
-                    family: 'Poppins',
+                    family: 'Inter, sans-serif',
                     size: 12
                 }
             }
@@ -95,14 +95,14 @@ export default function PieChart({ data, title, className = '' }) {
         <div className={`glass rounded-3xl p-8 ${className}`}>
             {title && (
                 <div className="flex items-center justify-between mb-8">
-                    <h3 className="text-sm font-bold text-light-100 uppercase tracking-widest">{title}</h3>
+                    <h3 className="text-[11px] font-black text-dark-500 uppercase tracking-[0.2em]">{title}</h3>
                 </div>
             )}
-            <div style={{ height: '320px' }} className="relative">
+            <div style={{ height: '320px' }} className="relative flex flex-col justify-center">
                 <Pie data={chartData} options={options} />
-                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none pb-4">
-                    <span className="text-[10px] font-bold text-dark-500 uppercase tracking-widest">Total</span>
-                    <span className="text-2xl font-bold text-light-100">
+                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                    <span className="text-[9px] font-black text-dark-500 uppercase tracking-[0.2em]">Total</span>
+                    <span className="text-3xl font-black text-light-100 tracking-tighter">
                         {entries.reduce((acc, [, val]) => acc + val, 0).toLocaleString('pt-BR')}
                     </span>
                 </div>
