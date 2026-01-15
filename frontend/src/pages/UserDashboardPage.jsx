@@ -1,16 +1,18 @@
 import { useState, useEffect, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
     FileText, Upload, MessageSquare, Folder, Clock, CheckCircle,
-    AlertCircle, TrendingUp, CreditCard, Zap, ArrowRight, RefreshCw
+    AlertCircle, TrendingUp, CreditCard, Zap, ArrowRight, RefreshCw,
+    Image, Loader2, ChevronRight, Search, BarChart, LayoutDashboard,
+    LogOut, Brain, Sparkles, Bot, ArrowLeft, Coins
 } from 'lucide-react';
 import { AuthContext } from '../App';
 import { authenticatedJsonFetch } from '../utils/api';
 import toast from 'react-hot-toast';
 
 export default function UserDashboardPage() {
-    const { user } = useContext(AuthContext);
+    const { user, logout, isMaster } = useContext(AuthContext);
     const navigate = useNavigate();
 
     const [stats, setStats] = useState(null);
@@ -28,7 +30,7 @@ export default function UserDashboardPage() {
         try {
             const [statsData, analysesData] = await Promise.all([
                 authenticatedJsonFetch('/api/user/stats'),
-                authenticatedJsonFetch('/api/user/analyses?limit=5')
+                authenticatedJsonFetch('/api/user/analyses?limit=6')
             ]);
 
             if (statsData.success) {
@@ -45,252 +47,392 @@ export default function UserDashboardPage() {
         }
     };
 
+    const handleLogout = () => {
+        logout();
+        navigate('/login');
+    };
+
     const quickActions = [
         {
             title: 'Nova Análise',
-            description: 'Upload manual de documento',
+            description: 'Processar novo documento',
             icon: Upload,
             color: 'blue',
             action: () => navigate('/')
         },
         {
             title: 'WhatsApp',
-            description: 'Conectar e monitorar grupos',
+            description: 'Monitorar grupos e mensagens',
             icon: MessageSquare,
-            color: 'green',
+            color: 'emerald',
             action: () => navigate('/whatsapp')
         },
         {
             title: 'Google Drive',
-            description: 'Configurar pasta de destino',
+            description: 'Destinos de exportação',
             icon: Folder,
             color: 'amber',
             action: () => navigate('/settings')
         },
         {
             title: 'Histórico',
-            description: 'Ver todas as análises',
+            description: 'Base completa de análises',
             icon: Clock,
             color: 'purple',
             action: () => navigate('/history')
         }
     ];
 
-    const getStatusColor = (success) => {
-        if (success === true) return 'text-emerald-400';
-        if (success === false) return 'text-red-400';
-        return 'text-amber-400'; // fallback para processando se houver
-    };
-
-    const getStatusIcon = (success) => {
-        if (success === true) return <CheckCircle className="w-4 h-4" />;
-        if (success === false) return <AlertCircle className="w-4 h-4" />;
-        return <RefreshCw className="w-4 h-4 animate-spin" />;
-    };
-
     if (loading && !stats) {
         return (
             <div className="min-h-screen bg-dark-900 flex items-center justify-center">
-                <div className="w-10 h-10 border-2 border-brand-blue/30 border-t-brand-blue rounded-full animate-spin"></div>
+                <motion.div
+                    animate={{ rotate: 360 }}
+                    transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                    className="w-12 h-12 border-2 border-brand-blue/30 border-t-brand-blue rounded-full"
+                />
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen bg-dark-900 p-6">
-            {/* Background effects */}
-            <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
-                <div className="absolute -top-40 -left-40 w-[600px] h-[600px] bg-brand-blue/5 rounded-full blur-[120px]" />
-                <div className="absolute -bottom-40 -right-40 w-[700px] h-[700px] bg-emerald-500/3 rounded-full blur-[140px]" />
+        <div className="min-h-screen bg-dark-900 relative overflow-hidden selection:bg-brand-blue/30 text-light-100">
+            {/* Dynamic Background Elements */}
+            <div className="absolute inset-0 z-0 pointer-events-none">
+                <motion.div
+                    animate={{ x: [0, 30, 0], y: [0, 40, 0] }}
+                    transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+                    className="absolute top-0 right-0 w-[600px] h-[600px] bg-brand-blue/5 rounded-full blur-[120px]"
+                />
+                <motion.div
+                    animate={{ x: [0, -20, 0], y: [0, 60, 0] }}
+                    transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
+                    className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-emerald-500/5 rounded-full blur-[140px]"
+                />
+                <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-[0.02]"></div>
             </div>
 
-            <div className="relative z-10 max-w-7xl mx-auto">
-                {/* Header */}
-                <motion.div
-                    initial={{ opacity: 0, y: -20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="mb-8"
-                >
-                    <h1 className="text-2xl font-bold text-light-100">
-                        Olá, {user?.email?.split('@')[0] || 'Usuário'} 👋
-                    </h1>
-                    <p className="text-dark-500 text-sm mt-1">
-                        Acompanhe suas análises e gerencie suas integrações
-                    </p>
+            {/* Floating Decorative Icons */}
+            <div className="absolute inset-0 pointer-events-none overflow-hidden z-10">
+                <motion.div animate={{ y: [0, -15, 0] }} transition={{ duration: 7, repeat: Infinity }} className="absolute top-[15%] left-[5%] text-brand-blue/10">
+                    <Brain className="w-16 h-16" />
                 </motion.div>
-
-                {/* Stats Cards */}
-                <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.1 }}
-                    className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8"
-                >
-                    <StatsCard
-                        title="Análises Hoje"
-                        value={stats?.analysesToday || 0}
-                        icon={FileText}
-                        color="blue"
-                        change={stats?.analysesTodayChange}
-                    />
-                    <StatsCard
-                        title="Créditos Restantes"
-                        value={stats?.credits || 0}
-                        icon={CreditCard}
-                        color="green"
-                    />
-                    <StatsCard
-                        title="Taxa de Sucesso"
-                        value={`${stats?.successRate || 0}%`}
-                        icon={TrendingUp}
-                        color="purple"
-                    />
-                    <StatsCard
-                        title="Total do Mês"
-                        value={stats?.monthTotal || 0}
-                        icon={Zap}
-                        color="amber"
-                    />
+                <motion.div animate={{ y: [0, 20, 0] }} transition={{ duration: 9, repeat: Infinity }} className="absolute bottom-[20%] right-[8%] text-emerald-500/10">
+                    <Sparkles className="w-12 h-12" />
                 </motion.div>
+                <motion.div animate={{ scale: [1, 1.1, 1] }} transition={{ duration: 5, repeat: Infinity }} className="absolute top-[40%] right-[15%] text-brand-blue/5">
+                    <Bot className="w-24 h-24" />
+                </motion.div>
+            </div>
 
-                {/* Quick Actions */}
-                <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.2 }}
-                    className="mb-8"
-                >
-                    <h2 className="text-lg font-semibold text-light-100 mb-4">Ações Rápidas</h2>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                        {quickActions.map((action, index) => (
-                            <motion.button
-                                key={action.title}
-                                onClick={action.action}
-                                whileHover={{ y: -4, scale: 1.02 }}
-                                whileTap={{ scale: 0.98 }}
-                                className="glass rounded-2xl p-5 text-left group transition-all hover:shadow-glow"
+            <div className="relative z-20 flex flex-col min-h-screen">
+                {/* Standard Header */}
+                <header className="bg-dark-800/80 backdrop-blur-md border-b border-dark-600 sticky top-0 z-50">
+                    <div className="max-w-screen-xl mx-auto px-6 h-16 grid grid-cols-3 items-center">
+                        <div className="flex items-center gap-4">
+                            <img src="/logo.png" alt="Logo" className="h-10 w-auto object-contain brightness-110" />
+                        </div>
+
+                        <div className="flex items-center justify-center">
+                            <span className="font-bold text-light-100 whitespace-nowrap uppercase tracking-[0.2em] text-sm">Painel do Usuário</span>
+                        </div>
+
+                        <div className="flex items-center justify-end gap-2">
+                            <button
+                                onClick={() => navigate('/')}
+                                className="p-2.5 text-light-200 hover:text-brand-blue rounded-xl hover:bg-dark-700/50 transition-all group"
+                                title="Início"
                             >
-                                <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-3 bg-${action.color === 'blue' ? 'brand-blue' : action.color}-500/10 border border-${action.color === 'blue' ? 'brand-blue' : action.color}-500/20`}>
-                                    <action.icon className={`w-5 h-5 text-${action.color === 'blue' ? 'brand-blue' : action.color}-500`} />
-                                </div>
-                                <h3 className="text-light-100 font-medium mb-1">{action.title}</h3>
-                                <p className="text-dark-500 text-xs">{action.description}</p>
-                                <ArrowRight className="w-4 h-4 text-dark-500 group-hover:text-brand-blue transition-colors mt-3" />
-                            </motion.button>
-                        ))}
-                    </div>
-                </motion.div>
-
-                {/* Recent Analyses */}
-                <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.3 }}
-                >
-                    <div className="flex items-center justify-between mb-4">
-                        <h2 className="text-lg font-semibold text-light-100">Análises Recentes</h2>
-                        <button
-                            onClick={() => navigate('/history')}
-                            className="text-sm text-brand-blue hover:underline flex items-center gap-1"
-                        >
-                            Ver todas <ArrowRight className="w-3 h-3" />
-                        </button>
-                    </div>
-
-                    <div className="glass rounded-2xl overflow-hidden">
-                        {recentAnalyses.length === 0 ? (
-                            <div className="p-8 text-center">
-                                <FileText className="w-12 h-12 text-dark-600 mx-auto mb-3" />
-                                <p className="text-dark-500">Nenhuma análise recente</p>
+                                <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
+                            </button>
+                            <button
+                                onClick={() => navigate('/whatsapp')}
+                                className="p-2.5 text-light-200 hover:text-emerald-500 rounded-xl hover:bg-dark-700/50 transition-all"
+                                title="WhatsApp"
+                            >
+                                <MessageSquare className="w-5 h-5" />
+                            </button>
+                            {isMaster && (
                                 <button
-                                    onClick={() => navigate('/')}
-                                    className="mt-4 px-4 py-2 bg-brand-blue/10 text-brand-blue rounded-xl text-sm hover:bg-brand-blue/20 transition-colors"
+                                    onClick={() => navigate('/dashboard')}
+                                    className="p-2.5 text-brand-gold hover:text-white rounded-xl hover:bg-dark-700/50 transition-all border border-brand-gold/10 hover:border-brand-gold/50"
+                                    title="Painel Master"
                                 >
-                                    Fazer primeira análise
+                                    <LayoutDashboard className="w-5 h-5" />
+                                </button>
+                            )}
+                            <div className="h-6 w-px bg-dark-600 mx-2"></div>
+                            <span className="text-xs font-medium text-dark-300 hidden sm:block mr-2">{user?.email}</span>
+                            <button onClick={handleLogout} className="p-2.5 text-dark-400 hover:text-red-400 rounded-xl hover:bg-red-500/5 transition-all">
+                                <LogOut className="w-5 h-5" />
+                            </button>
+                        </div>
+                    </div>
+                </header>
+
+                <main className="flex-1 max-w-screen-xl mx-auto px-6 py-12 w-full">
+                    <motion.div
+                        initial={{ opacity: 0, y: 30 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="mb-12"
+                    >
+                        <h1 className="text-4xl font-black text-light-100 mb-3 tracking-tight">
+                            Bem-vindo de volta, <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-blue to-emerald-400">{user?.email?.split('@')[0] || 'Usuário'}</span>
+                        </h1>
+                        <p className="text-dark-400 text-lg font-medium opacity-80">
+                            Central de automação e monitoramento de documentos.
+                        </p>
+                    </motion.div>
+
+                    {/* Stats Section */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+                        <StatsCard
+                            title="Docs Hoje"
+                            value={stats?.analysesToday || 0}
+                            icon={FileText}
+                            color="blue"
+                            change={stats?.analysesTodayChange}
+                        />
+                        <StatsCard
+                            title="Saldo Créditos"
+                            value={stats?.credits || 0}
+                            icon={Coins}
+                            color="emerald"
+                        />
+                        <StatsCard
+                            title="Taxa de Precisão"
+                            value={`${stats?.successRate || 0}%`}
+                            icon={TrendingUp}
+                            color="purple"
+                        />
+                        <StatsCard
+                            title="Total Mensal"
+                            value={stats?.monthTotal || 0}
+                            icon={Zap}
+                            color="amber"
+                        />
+                    </div>
+
+                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+                        {/* Quick Actions - 5 cols */}
+                        <div className="lg:col-span-5 space-y-6">
+                            <h2 className="text-xs font-black text-dark-500 uppercase tracking-[0.3em] mb-4 flex items-center gap-3">
+                                <Zap className="w-4 h-4 text-amber-500" />
+                                Atalhos Rápidos
+                            </h2>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                {quickActions.map((action, index) => (
+                                    <motion.button
+                                        key={action.title}
+                                        initial={{ opacity: 0, y: 15 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        transition={{ delay: index * 0.1 }}
+                                        onClick={action.action}
+                                        whileHover={{ y: -5, scale: 1.02 }}
+                                        className="bg-dark-800/80 backdrop-blur-sm rounded-[2rem] p-6 border border-dark-600 shadow-xl group text-left relative overflow-hidden"
+                                    >
+                                        <div className={`w-12 h-12 rounded-2xl flex items-center justify-center mb-5 transition-all group-hover:scale-110 shadow-lg ${action.color === 'blue' ? 'bg-brand-blue/10 text-brand-blue border border-brand-blue/20 shadow-brand-blue/5' :
+                                            action.color === 'emerald' ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 shadow-emerald-500/5' :
+                                                action.color === 'amber' ? 'bg-amber-500/10 text-amber-500 border border-amber-500/20 shadow-amber-500/5' :
+                                                    'bg-purple-500/10 text-purple-500 border border-purple-500/20 shadow-purple-500/5'
+                                            }`}>
+                                            <action.icon className="w-6 h-6" />
+                                        </div>
+                                        <h3 className="text-light-100 font-bold text-lg mb-1">{action.title}</h3>
+                                        <p className="text-dark-500 text-xs leading-relaxed">{action.description}</p>
+
+                                        <div className="mt-6 flex items-center text-[10px] font-black uppercase tracking-[0.2em] text-dark-500 group-hover:text-light-100 transition-colors">
+                                            Explorar <ArrowRight className="w-3 h-3 ml-2 group-hover:translate-x-1 transition-transform" />
+                                        </div>
+
+                                        <div className="absolute top-0 right-0 p-4 opacity-[0.03] group-hover:opacity-[0.08] transition-opacity">
+                                            <action.icon className="w-24 h-24" />
+                                        </div>
+                                    </motion.button>
+                                ))}
+                            </div>
+
+                            {/* Promotional / Info Card */}
+                            <motion.div
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                transition={{ delay: 0.5 }}
+                                className="mt-8 bg-gradient-to-br from-brand-blue/20 to-emerald-500/10 rounded-[2.5rem] p-8 border border-white/5 relative overflow-hidden group"
+                            >
+                                <div className="relative z-10">
+                                    <h3 className="text-light-100 font-black text-xl mb-2 italic">Precisando de escala?</h3>
+                                    <p className="text-dark-300 text-sm mb-6 leading-relaxed">
+                                        Fale com nosso time para planos personalizados e processamento massivo via API direta.
+                                    </p>
+                                    <button className="px-6 py-3 bg-white text-dark-900 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-brand-blue hover:text-white transition-all shadow-xl shadow-black/20 text-dark-900 font-bold">
+                                        Contatar Vendas
+                                    </button>
+                                </div>
+                                <Bot className="absolute -bottom-6 -right-6 w-32 h-32 text-white/5 rotate-12 group-hover:scale-110 transition-transform" />
+                            </motion.div>
+                        </div>
+
+                        {/* Recent Activity - 7 cols */}
+                        <div className="lg:col-span-7 space-y-6">
+                            <div className="flex items-center justify-between mb-4">
+                                <h2 className="text-xs font-black text-dark-500 uppercase tracking-[0.3em] flex items-center gap-3">
+                                    <Clock className="w-4 h-4 text-brand-blue" />
+                                    Atividades Recentes
+                                </h2>
+                                <button
+                                    onClick={() => navigate('/history')}
+                                    className="text-[10px] font-black uppercase tracking-[0.2em] text-brand-blue hover:text-white transition-colors"
+                                >
+                                    Ver Histórico Completo
                                 </button>
                             </div>
-                        ) : (
-                            <table className="w-full">
-                                <thead>
-                                    <tr className="border-b border-dark-700">
-                                        <th className="text-left text-xs font-medium text-dark-500 uppercase tracking-wider px-6 py-4">Arquivo</th>
-                                        <th className="text-left text-xs font-medium text-dark-500 uppercase tracking-wider px-6 py-4">Tipo</th>
-                                        <th className="text-left text-xs font-medium text-dark-500 uppercase tracking-wider px-6 py-4">Data</th>
-                                        <th className="text-left text-xs font-medium text-dark-500 uppercase tracking-wider px-6 py-4">Status</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {recentAnalyses.map((analysis, index) => (
-                                        <tr
-                                            key={analysis.id || index}
-                                            className="border-b border-dark-700/50 hover:bg-dark-800/30 transition-colors cursor-pointer"
-                                            onClick={() => navigate(`/analysis/${analysis.id}`)}
+
+                            <motion.div
+                                initial={{ opacity: 0, x: 20 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                className="bg-dark-800/80 backdrop-blur-sm rounded-[2rem] border border-dark-600 shadow-xl overflow-hidden"
+                            >
+                                {recentAnalyses.length === 0 ? (
+                                    <div className="p-20 text-center flex flex-col items-center justify-center">
+                                        <div className="w-20 h-20 bg-dark-700/50 rounded-full flex items-center justify-center mb-6 border border-dark-600">
+                                            <FileText className="w-10 h-10 text-dark-600" />
+                                        </div>
+                                        <p className="text-dark-300 font-bold text-lg mb-2">Sem registros ainda</p>
+                                        <p className="text-dark-500 text-sm max-w-[280px] mx-auto leading-relaxed">
+                                            Sua atividade começará a aparecer aqui assim que você processar o primeiro documento.
+                                        </p>
+                                    </div>
+                                ) : (
+                                    <div className="divide-y divide-dark-700/30">
+                                        {recentAnalyses.map((analysis) => (
+                                            <div
+                                                key={analysis.id}
+                                                onClick={() => navigate(`/analysis/${analysis.id}`)}
+                                                className="p-6 hover:bg-dark-900/50 transition-all flex items-center gap-6 cursor-pointer group"
+                                            >
+                                                <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 border transition-all ${analysis.success === true ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-500 shadow-sm shadow-emerald-500/5' :
+                                                    analysis.success === false ? 'bg-red-500/10 border-red-500/20 text-red-500' :
+                                                        'bg-amber-500/10 border-amber-500/20 text-amber-500 shadow-sm shadow-amber-500/5'
+                                                    }`}>
+                                                    {analysis.file_type?.includes('image') ? <Image className="w-7 h-7" /> : <FileText className="w-7 h-7" />}
+                                                </div>
+
+                                                <div className="flex-1 min-w-0">
+                                                    <div className="flex items-center justify-between mb-1">
+                                                        <h4 className="text-md font-bold text-light-100 truncate pr-4 group-hover:text-brand-blue transition-colors">
+                                                            {analysis.file_name || 'Documento sem nome'}
+                                                        </h4>
+                                                        <span className="text-[10px] text-dark-500 font-mono font-bold whitespace-nowrap opacity-60">
+                                                            {new Date(analysis.created_at).toLocaleTimeString().slice(0, 5)}
+                                                        </span>
+                                                    </div>
+                                                    <div className="flex items-center gap-4">
+                                                        <p className="text-xs text-dark-500 font-medium">
+                                                            Tipo: <span className="text-dark-300">{analysis.analysis_type || 'WhatsApp'}</span>
+                                                        </p>
+                                                        <div className="w-1 h-1 bg-dark-600 rounded-full"></div>
+                                                        <div className={`flex items-center gap-1.5 text-[9px] font-black uppercase tracking-widest ${analysis.success === true ? 'text-emerald-500' :
+                                                            analysis.success === false ? 'text-red-500' : 'text-amber-500'
+                                                            }`}>
+                                                            {analysis.success === true ? <CheckCircle className="w-2.5 h-2.5" /> :
+                                                                analysis.success === false ? <AlertCircle className="w-2.5 h-2.5" /> :
+                                                                    <RefreshCw className="w-2.5 h-2.5 animate-spin" />}
+                                                            {analysis.success === true ? 'Processado' :
+                                                                analysis.success === false ? 'Falha' : 'Em andamento'}
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <ChevronRight className="w-5 h-5 text-dark-600 opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
+                                            </div>
+                                        ))}
+
+                                        <button
+                                            onClick={() => navigate('/history')}
+                                            className="w-full py-5 bg-dark-900/30 hover:bg-dark-700/50 text-dark-500 hover:text-light-100 text-[10px] font-black uppercase tracking-[0.3em] transition-all border-t border-dark-700/30 font-bold"
                                         >
-                                            <td className="px-6 py-4">
-                                                <div className="flex items-center gap-3">
-                                                    <FileText className="w-4 h-4 text-dark-500" />
-                                                    <span className="text-light-200 text-sm truncate max-w-[200px]">
-                                                        {analysis.file_name || 'Documento'}
-                                                    </span>
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-4">
-                                                <span className="text-dark-400 text-sm">
-                                                    {analysis.analysis_type || 'Auto'}
-                                                </span>
-                                            </td>
-                                            <td className="px-6 py-4">
-                                                <span className="text-dark-400 text-sm">
-                                                    {new Date(analysis.created_at).toLocaleDateString('pt-BR')}
-                                                </span>
-                                            </td>
-                                            <td className="px-6 py-4">
-                                                <div className={`flex items-center gap-2 ${getStatusColor(analysis.success)}`}>
-                                                    {getStatusIcon(analysis.success)}
-                                                    <span className="text-sm capitalize">
-                                                        {analysis.success === true ? 'Concluído' :
-                                                            analysis.success === false ? 'Erro' : 'Processando'}
-                                                    </span>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        )}
+                                            Base de Conhecimento Completa
+                                        </button>
+                                    </div>
+                                )}
+                            </motion.div>
+                        </div>
                     </div>
-                </motion.div>
+                </main>
+
+                <footer className="mt-auto py-8 border-t border-dark-600/30 bg-dark-900/50">
+                    <div className="max-w-screen-xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-4">
+                        <p className="text-[10px] font-black text-dark-500 uppercase tracking-widest">
+                            &copy; 2026 LEITOR DE DOCS. POWERED BY AI ENGINES.
+                        </p>
+                        <div className="flex items-center gap-6">
+                            <a href="#" className="text-[10px] font-black text-dark-500 hover:text-brand-blue uppercase tracking-widest transition-colors">Termos</a>
+                            <a href="#" className="text-[10px] font-black text-dark-500 hover:text-brand-blue uppercase tracking-widest transition-colors">Privacidade</a>
+                            <a href="#" className="text-[10px] font-black text-dark-500 hover:text-brand-blue uppercase tracking-widest transition-colors">Suporte</a>
+                        </div>
+                    </div>
+                </footer>
             </div>
         </div>
     );
 }
 
-// Componente interno de StatsCard simplificado
 function StatsCard({ title, value, icon: Icon, color, change }) {
-    const colorClasses = {
-        blue: 'border-brand-blue/20 bg-brand-blue/10 text-brand-blue',
-        green: 'border-emerald-500/20 bg-emerald-500/10 text-emerald-500',
-        purple: 'border-purple-500/20 bg-purple-500/10 text-purple-500',
-        amber: 'border-amber-500/20 bg-amber-500/10 text-amber-500'
+    const colorMap = {
+        blue: {
+            bg: 'bg-brand-blue/10',
+            text: 'text-brand-blue',
+            border: 'border-brand-blue/20',
+            glow: 'shadow-brand-blue/5'
+        },
+        emerald: {
+            bg: 'bg-emerald-500/10',
+            text: 'text-emerald-500',
+            border: 'border-emerald-500/20',
+            glow: 'shadow-emerald-500/5'
+        },
+        purple: {
+            bg: 'bg-purple-500/10',
+            text: 'text-purple-500',
+            border: 'border-purple-500/20',
+            glow: 'shadow-purple-500/5'
+        },
+        amber: {
+            bg: 'bg-amber-500/10',
+            text: 'text-amber-500',
+            border: 'border-amber-500/20',
+            glow: 'shadow-amber-500/5'
+        }
     };
+
+    const scheme = colorMap[color] || colorMap.blue;
 
     return (
         <motion.div
-            whileHover={{ y: -4, scale: 1.02 }}
-            className="glass rounded-2xl p-5 transition-all hover:shadow-glow"
+            whileHover={{ y: -5 }}
+            className="bg-dark-800/80 backdrop-blur-sm rounded-[2rem] p-6 border border-dark-600 shadow-xl relative overflow-hidden group transition-all hover:border-dark-500"
         >
-            <div className="flex items-center justify-between mb-4">
-                <div className={`p-3 rounded-xl border ${colorClasses[color]}`}>
+            <div className="flex items-center justify-between mb-4 relative z-10">
+                <div className={`p-3 rounded-2xl ${scheme.bg} ${scheme.text} ${scheme.border} border shadow-lg ${scheme.glow} transition-transform group-hover:scale-110`}>
                     <Icon className="w-5 h-5" />
                 </div>
                 {change !== undefined && (
-                    <span className={`text-xs font-medium ${change >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-                        {change >= 0 ? '+' : ''}{change}%
-                    </span>
+                    <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-black ${change >= 0 ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-400'
+                        }`}>
+                        {change >= 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingUp className="w-3 h-3 rotate-180" />}
+                        {Math.abs(change)}%
+                    </div>
                 )}
             </div>
-            <p className="text-dark-500 text-[10px] font-bold uppercase tracking-widest mb-1">{title}</p>
-            <p className="text-2xl font-bold text-light-100">{value}</p>
+
+            <div className="relative z-10">
+                <h3 className="text-dark-500 text-[10px] font-black uppercase tracking-[0.2em] mb-1">{title}</h3>
+                <p className="text-3xl font-black text-light-100 tracking-tighter">{value}</p>
+            </div>
+
+            <div className={`absolute -bottom-6 -right-6 opacity-[0.03] group-hover:opacity-[0.06] transition-opacity ${scheme.text}`}>
+                <Icon className="w-24 h-24" />
+            </div>
         </motion.div>
     );
 }
