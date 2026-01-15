@@ -3,7 +3,8 @@ import makeWASocket, {
     fetchLatestBaileysVersion,
     makeCacheableSignalKeyStore,
     delay,
-    downloadMediaMessage
+    downloadMediaMessage,
+    initAuthCreds
 } from '@whiskeysockets/baileys';
 import { createClient } from '@supabase/supabase-js';
 import pino from 'pino';
@@ -22,18 +23,22 @@ const logger = pino({ level: 'silent' });
  */
 async function useSupabaseAuthState(instanceId) {
     const writeData = async (data, id) => {
-        const { error } = await supabaseAdmin
-            .from('whatsapp_sessions')
-            .upsert({
-                instance_id: `${instanceId}:${id}`,
-                data: JSON.parse(JSON.stringify(data, (key, value) => {
-                    if (value instanceof Uint8Array || Buffer.isBuffer(value)) {
-                        return { _type: 'Buffer', _data: Buffer.from(value).toString('base64') };
-                    }
-                    return value;
-                }))
-            });
-        if (error) console.error(`❌ Erro ao salvar sessão (${id}):`, error.message);
+        try {
+            const { error } = await supabaseAdmin
+                .from('whatsapp_sessions')
+                .upsert({
+                    instance_id: `${instanceId}:${id}`,
+                    data: JSON.parse(JSON.stringify(data, (key, value) => {
+                        if (value instanceof Uint8Array || Buffer.isBuffer(value)) {
+                            return { _type: 'Buffer', _data: Buffer.from(value).toString('base64') };
+                        }
+                        return value;
+                    }))
+                });
+            if (error) console.error(`❌ Erro ao salvar sessão (${id}):`, error.message);
+        } catch (err) {
+            console.error(`❌ Erro fatal ao salvar sessão (${id}):`, err.message);
+        }
     };
 
     const readData = async (id) => {
@@ -60,7 +65,7 @@ async function useSupabaseAuthState(instanceId) {
             .eq('instance_id', `${instanceId}:${id}`);
     };
 
-    const creds = await readData('creds') || {};
+    const creds = await readData('creds') || initAuthCreds();
 
     return {
         state: {
@@ -138,8 +143,11 @@ class WhatsAppInternalService {
                 supabaseAdmin.from('whatsapp_instances').update({ status: 'disconnected', updated_at: new Date().toISOString() }).eq('instance_id', instanceId).then();
 
                 if (shouldReconnect) {
+                    console.log(`🔄 Tentando reconectar instância ${instanceId} em 5 segundos...`);
                     this.sessions.delete(instanceId);
-                    this.getOrCreateSession(instanceId);
+                    setTimeout(() => {
+                        this.getOrCreateSession(instanceId);
+                    }, 5000);
                 } else {
                     console.log('🔴 Conexão encerrada permanentemente (Logout)');
                     this.results.set(instanceId, { status: 'disconnected', qr: null });
