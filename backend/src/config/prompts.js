@@ -516,6 +516,291 @@ EXEMPLO DE RETORNO:
 - NUNCA retorne palavras como "Transferência" e "Transferências" e "TRANSFERÊNCIA" E "TRANSFERÊNCIAS"
 - NUNCA retorne palavras como "Depósito" e "Depósitos" e "DEPÓSITO" E "DEPÓSITOS"
 - NUNCA retorne palavras como "Pagamento" e "Pagamentos" e "PAGAMENTO" E "PAGAMENTOS"
+      - NUNCA retorne palavras como "Pix" e "Pixs" e "PIX" E "PIXS"
+- NUNCA retorne palavras como "Cartão" e "Cartões" e "CARTÃO" E "CARTÕES"`
+    }
+  },
+
+  'mirella-rabelo': {
+    name: 'Mirella Rabelo',
+    icon: 'User',
+    FINANCIAL: {
+      RECEIPT: ``,
+      PAYMENT: `Identifique se é uma NOTA FISCAL DE VENDA e extraia os seguintes dados:
+
+Características para identificação:
+Contém "NOTA FISCAL ELETRÔNICA"
+Campo "VENDA" como natureza da operação
+Campo "VALOR TOTAL DA NOTA" ou "TOTAL DA NOTA"
+Campo "DATA DE EMISSÃO"
+
+Dados a extrair:
+DATA DE EMISSÃO: Procure o campo com a etiqueta "Data de Emissão"
+NOME DO FORNECEDOR: no primeiro bloco CANTO superior direito, PODE SER LOGO OU NOME COMPLETO "LTDA" 
+VALOR DA NOTA: Campo "VALOR TOTAL DA NF" (não confundir com total dos produtos)
+FORMATO DE RETORNO:
+XX-XX NOME_FORNECEDOR XXX,XX
+
+onde:
+XX-XX = dia e mês da data de emissão
+NOME_FORNECEDOR = nome completo do fornecedor
+XXX,XX = valor total da nota
+EXEMPLO: 02-05 J&A MOVEIS LTDA - EPP 1.535,49
+
+**REGRA ESPECIFICA**
+- NUNCA PEGUE O "NOME/RAZÃO SOCIAL"
+
+Identifique se é um COMPROVANTE DE ENVIO PIX do Sicoob e extraia os seguintes dados:
+
+Características para identificação:
+Logotipo do SICOOB
+Contém "Comprovante de envio Pix"
+Campo "Transferido" com data e hora
+
+Dados a extrair:
+RECEBEDOR: Nome no campo "Recebedor" ou "Beneficiário"
+DESCRIÇÃO: Texto abaixo do valor transferido (exemplo: "compra de pés de madeira"), GERALMENTE ABAIXO DE DADOS DE DATA (EXEMPLO: "TRANSFERIDO 30/06/2025 ÁS 17:55:04")
+VALOR: Campo "R$" destacado logo abaixo de "Comprovante de envio Pix"
+
+FORMATO DE RETORNO:
+XX-XX NOME_RECEBEDOR DESCRICAO XXX,XX
+
+onde:
+XX-XX = dia e mês da data de transferência
+NOME_RECEBEDOR = nome completo do recebedor ou beneficiário
+DESCRICAO = texto descritivo da transferência
+XXX,XX = valor transferido, com ponto como separador decimal
+
+EXEMPLO DE RETORNO:
+02-06 JOAQUIM ANTONIO DE CARVALHO compra de pes de madeira 990,00
+
+Identifique se é um BOLETO BANCÁRIO e extraia os seguintes dados:
+
+Características para identificação:
+Código de barras na lateral ou no Rodapé
+Campo "Beneficiário"
+Campo "Data de Vencimento"
+Campo "Valor do Documento"
+Sempre terá código de barras
+Sempre terá a numeração do código de barras no cabeçalho
+
+
+Dados a extrair:
+DATA DE VENCIMENTO: Sempre Campo "Data de Vencimento"
+BENEFICIÁRIO: SEMPRE Campo "Beneficiário"
+VALOR: Campo "Valor do Documento"
+
+FORMATO DE RETORNO:
+XX-XX BENEFICIARIO XXX,XX
+
+onde:
+XX-XX = dia e mês da data de vencimento
+BENEFICIARIO = nome completo do beneficiário
+XXX,XX = valor do boleto (com ponto como separador decimal)
+
+EXEMPLO DE RETORNO:
+07-07 J A MOVEIS LTDA 1539,40
+
+**REGRAS ESPECIFICAS:**
+JAMAIS PEGUE O NOME DO PAGADOR 
+
+Identifique se é um COMPROVANTE DE TRANSFERÊNCIA BANCÁRIA do Bradesco e extraia os seguintes dados:
+
+Características para identificação:
+Logotipo do Bradesco Net Empresa
+Campo "Comprovante de Transação Bancária"
+Campo "Data da operação"
+
+Dados a extrair:
+DATA DA OPERAÇÃO: Campo "Data de Vencimento"
+NOME: Campo "Nome" dentro de "Dados de quem recebeu"
+VALOR: Campo "Valor" em "Dados da transferência"
+
+FORMATO DE RETORNO:
+XX-XX NOME XXX,XX
+
+onde:
+XX-XX = dia e mês da data da operação
+NOME = nome completo do recebedor
+XXX,XX = valor da transferência, com ponto como separador decimal
+
+EXEMPLO DE RETORNO:
+03-06 GENESIS WILLIAM FERREIRA 1000,00
+
+Identifique se é uma CONTA DE ÁGUA da SANEAGO e extraia os seguintes dados:
+
+Características para identificação:
+Logotipo ou nome SANEAGO
+Campo "Vencimento"
+Campo "Valor a pagar"
+
+Dados a extrair:
+VENCIMENTO: Campo "Vencimento"
+NOME DO FORNECEDOR: Sempre fixo como "SANEAMENTO DE GOIÁS S.A"
+VALOR: Campo "Valor a pagar"
+
+FORMATO DE RETORNO:
+XX-XX AGUA NOME_FORNECEDOR XXX,XX
+
+onde:
+XX-XX = dia e mês do vencimento
+NOME_FORNECEDOR = "SANEAMENTO DE GOIÁS S.A"
+XXX,XX = valor a pagar, com ponto como separador decimal
+
+EXEMPLO DE RETORNO:
+21-06 AGUA SANEAMENTO DE GOIÁS S.A 224,34
+
+Identifique se é uma CONTA DE ENERGIA da EQUATORIAL e extraia os seguintes dados:
+
+Características para identificação:
+Logotipo ou nome EQUATORIAL
+Campo "Vencimento"
+Campo "Valor a pagar"
+
+Dados a extrair:
+VENCIMENTO: Campo "Vencimento"
+NOME DO FORNECEDOR: Sempre fixo como "EQUATORIAL GOIÁS DISTRIBUIDORA DE ENERGIA S.A"
+VALOR: Campo "Valor a pagar"
+
+FORMATO DE RETORNO:
+XX-XX ENERGIA NOME_FORNECEDOR XXX,XX
+
+onde:
+XX-XX = dia e mês do vencimento
+NOME_FORNECEDOR = "EQUATORIAL DE GOIÁS S.A"
+XXX,XX = valor a pagar, com ponto como separador decimal
+
+EXEMPLO DE RETORNO:
+21-06 ENERGIA EQUATORIAL DE GOIÁS S.A 224,34
+
+Identifique se é um COMPROVANTE DE ABASTECIMENTO de posto de combustível e extraia os seguintes dados:
+
+Características para identificação:
+Logotipo Auto Posto Petrolina
+Campo "Total" com valor destacado
+Campo manuscrito com data
+
+Dados a extrair:
+DATA: Campo manuscrito (normalmente ao lado de "Data")
+NOME DO FORNECEDOR: Fixo como "AUTO POSTO PETROLINA"
+VALOR: Campo "Total"
+
+FORMATO DE RETORNO:
+XX-XX AUTO POSTO PETROLINA XXX,XX
+
+onde:
+XX-XX = dia e mês da data do abastecimento
+XXX,XX = valor total, com ponto como separador decimal
+
+EXEMPLO DE RETORNO:
+05-06 AUTO POSTO PETROLINA 150,00
+
+Identifique se é um COMPROVANTE DE TRANSFERÊNCIA BANCÁRIA do Bradesco e extraia os seguintes dados:
+
+Características para identificação:
+Contém logotipo ou nome Bradesco
+Campo "Confirmação de Operação"
+Campo "Data da operação"
+
+Dados a extrair:
+DATA DA OPERAÇÃO: Campo "Data de Vencimento"
+NOME: Campo "Nome" dentro de "Dados de quem recebeu"
+DESCRIÇÃO: Campo "Descrição" em "Dados da Transferência"
+VALOR: Campo "Valor" em "Dados da Transferência"
+
+FORMATO DE RETORNO:
+XX-XX NOME DESCRICAO XXX,XX
+
+onde:
+XX-XX = dia e mês da data da operação
+NOME = nome completo do recebedor
+DESCRICAO = descrição da transferência no campo (exemplo: "Descrição: Honorario Advocaticio") 
+XXX,XX = valor da transferência, com ponto como separador decimal
+
+EXEMPLO DE RETORNO:
+03-06 MICAELLY KAROLINY MARTINS Honorario Advocaticio 5500,00
+
+Identifique se é um DOCUMENTO DE ARRECADAÇÃO DE RECEITAS FEDERAIS e extraia os seguintes dados:
+
+Características para identificação:
+Logotipo Receita Federal ESCRITO Receita Federal
+Campo “Pagar este documento até”
+Campo “Valor Total do Documento” destacado
+
+
+Dados a extrair:
+DATA: Campo “Pagar este documento até”, devolvendo no formato DD-MM (ex: “17/04/2025” retorna “17-04”)
+NOME: Sempre retorne fixo como “INSS"
+VALOR TOTAL DO DOCUMENTO: Campo “Valor Total do Documento”, com ponto como separador decimal
+
+FORMATO DE RETORNO:
+XX-XX INSS XXX,XX
+
+onde:
+XX-XX = dia e mês da data de vencimento
+XXX,XX = valor total do documento, com ponto como separador decimal
+
+EXEMPLO DE RETORNO:
+17-04 INSS 785,53
+
+Identifique se é um DOCUMENTO SIMPLES NACIONAL e extraia os seguintes dados:
+
+Características para identificação:
+Logotipo SIMPLES NACIONAL ESCRITO SIMPLES NACIONAL
+Campo “Pagar este documento até”
+Campo “Valor Total do Documento” destacado
+
+
+Dados a extrair:
+DATA: Campo “Pagar este documento até”, devolvendo no formato DD-MM (ex: “17/04/2025” retorna “17-04”)
+NOME: Sempre retorne fixo como “SIMPLES NACIONAL"
+VALOR TOTAL DO DOCUMENTO: Campo “Valor Total do Documento”, com ponto como separador decimal
+
+FORMATO DE RETORNO:
+XX-XX SIMPLES NACIONAL XXX,XX
+
+onde:
+XX-XX = dia e mês da data de vencimento
+XXX,XX = valor total do documento, com ponto como separador decimal
+
+EXEMPLO DE RETORNO:
+17-04 SIMPLES NACIONAL 785,53
+
+Identifique se é um DOCUMENTO FGTS DIGITAL e extraia os seguintes dados:
+
+Características para identificação:
+Logotipo FGTS DIGITAL ESCRITO FGTS DIGITAL
+Campo “Pagar este documento até”
+Campo “Valor Total do Documento” destacado
+
+
+Dados a extrair:
+DATA: Campo “Pagar este documento até”, devolvendo no formato DD-MM (ex: “17/04/2025” retorna “17-04”)
+NOME: Sempre retorne fixo como “FGTS"
+VALOR TOTAL DO DOCUMENTO: Campo “Valor Total do Documento”, com ponto como separador decimal
+
+FORMATO DE RETORNO:
+XX-XX FGTS XXX,XX
+
+onde:
+XX-XX = dia e mês da data de vencimento
+XXX,XX = valor total do documento, com ponto como separador decimal
+
+EXEMPLO DE RETORNO:
+17-04 FGTS 785,53
+
+**REGRAS GERAIS:**
+- Use "ND" para dados não encontrados
+- RETORNE APENAS no formato especificado
+- Formato obrigatório: XX-XX NOME_CLIENTE XXX,XX
+- NUNCA PEGUE O NOME DO PAGADOR
+- NUNCA retorne palavras como "Boleto" e "Boletos" e "BOLETO" E "BOLETOS"
+- NUNCA retorne palavras como "Venda" e "Vendas" e "VENDA" E "VENDAS"
+- NUNCA retorne palavras como "Comprovante" e "Comprovantes" e "COMPROVANTE" E "COMPROVANTES"
+- NUNCA retorne palavras como "Nota Fiscal" e "Notas Fiscais" e "NOTA FISCAL" E "NOTAS FISCAIS"
+- NUNCA retorne palavras como "Transferência" e "Transferências" e "TRANSFERÊNCIA" E "TRANSFERÊNCIAS"
+- NUNCA retorne palavras como "Depósito" e "Depósitos" e "DEPÓSITO" E "DEPÓSITOS"
+- NUNCA retorne palavras como "Pagamento" e "Pagamentos" e "PAGAMENTO" E "PAGAMENTOS"
 - NUNCA retorne palavras como "Pix" e "Pixs" e "PIX" E "PIXS"
 - NUNCA retorne palavras como "Cartão" e "Cartões" e "CARTÃO" E "CARTÕES"`
     }
