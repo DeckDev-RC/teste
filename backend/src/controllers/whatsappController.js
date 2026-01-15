@@ -159,10 +159,13 @@ export const getGroups = async (req, res) => {
 
         // No Baileys, os grupos estão no store ou podem ser buscados
         const groups = await sock.groupFetchAllParticipating();
-        const formattedGroups = Object.values(groups).map(g => ({
-            jid: g.id,
-            name: g.subject
-        }));
+        const formattedGroups = Object.values(groups).map(g => {
+            console.log(`[WhatsApp] Grupo: ${g.id} - ${g.subject || g.name || 'SEM NOME'}`);
+            return {
+                jid: g.id,
+                name: g.subject || g.name || 'Grupo sem nome'
+            };
+        });
 
         res.json({ success: true, data: formattedGroups });
     } catch (error) {
