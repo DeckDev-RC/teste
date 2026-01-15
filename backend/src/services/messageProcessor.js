@@ -114,8 +114,8 @@ class MessageProcessor {
             e forneça um resumo conciso. 
             Se for uma nota fiscal ou boleto, extraia os dados para pagamento.`;
 
-            // Realiza a análise
-            const analysisResult = await aiService.analyzeImage(mediaBuffer, mediaResult.data.mimetype, prompt);
+            // Realiza a análise (passando base64 direto, pois o GeminiService espera base64)
+            const analysisResult = await aiService.analyzeImage(prompt, mediaResult.data.base64, mediaResult.data.mimetype);
 
             // 5. Upload para o Google Drive
             let driveUrl = null;
