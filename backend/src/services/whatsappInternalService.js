@@ -51,8 +51,24 @@ async function useSupabaseAuthState(instanceId) {
 
             if (error || !data) return null;
 
-            // Usa BufferJSON.reviver para restaurar Buffers corretamente
-            return JSON.parse(JSON.stringify(data.data), BufferJSON.reviver);
+            // Reviver robusto que suporta o formato BufferJSON oficial e o formato customizado anterior
+            const reviver = (key, value) => {
+                if (value && typeof value === 'object') {
+                    // Suporte ao formato oficial do Baileys { type: 'Buffer', data: '...' }
+                    if (value.type === 'Buffer' && (typeof value.data === 'string' || Array.isArray(value.data))) {
+                        return Buffer.from(value.data, typeof value.data === 'string' ? 'base64' : undefined);
+                    }
+                    // Suporte ao formato customizado anterior { _type: 'Buffer', _data: '...' }
+                    if (value._type === 'Buffer' && typeof value._data === 'string') {
+                        return Buffer.from(value._data, 'base64');
+                    }
+                }
+                return value;
+            };
+
+            // Se for string, parseia. Se for objeto (JSONB), stringifica e parseia com o reviver.
+            const rawData = typeof data.data === 'string' ? JSON.parse(data.data) : data.data;
+            return JSON.parse(JSON.stringify(rawData), reviver);
         } catch (err) {
             console.error(`❌ Erro ao ler sessão (${id}):`, err.message);
             return null;
@@ -150,6 +166,15 @@ class WhatsAppInternalService {
                 if (shouldReconnect) {
                     console.log(`🔄 Tentando reconectar instância ${instanceId} em 5 segundos...`);
                     this.sessions.delete(instanceId);
+
+                    // Se o erro for de handshake (TypeError), pode ser estado corrompido
+                    if (lastDisconnect?.error?.message?.includes('Cannot read properties') ||
+                        lastDisconnect?.error?.message?.includes('data argument must be')) {
+                        console.warn(`⚠️ Detectado possível erro de estado corrompido em ${instanceId}. Limpando chaves locais.`);
+                        // Não deletamos do banco ainda para dar uma chance de recuperação, 
+                        // mas removemos do cache em memória para forçar novo carregamento.
+                    }
+
                     setTimeout(() => {
                         this.getOrCreateSession(instanceId);
                     }, 5000);
