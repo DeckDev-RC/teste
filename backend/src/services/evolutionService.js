@@ -2,6 +2,7 @@
  * Serviço para comunicação com Evolution API
  * Gerencia instâncias WhatsApp, QR codes e grupos
  */
+import '../config/env.js';
 import { createClient } from '@supabase/supabase-js';
 
 const EVOLUTION_API_URL = process.env.EVOLUTION_API_URL || 'http://evolution:8080';
@@ -19,21 +20,48 @@ async function evolutionFetch(endpoint, options = {}) {
 
     console.log(`[Evolution API] Request to: ${url}`);
 
-    const response = await fetch(url, {
-        ...options,
-        headers: {
-            'Content-Type': 'application/json',
-            'apikey': EVOLUTION_API_KEY,
-            ...options.headers,
-        },
-    });
+    // Adiciona timeout de 30 segundos para evitar ECONNRESET
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 30000);
 
-    if (!response.ok) {
-        const error = await response.text();
-        throw new Error(`Evolution API error: ${response.status} - ${error}`);
+    try {
+        const response = await fetch(url, {
+            ...options,
+            signal: controller.signal,
+            headers: {
+                'Content-Type': 'application/json',
+                'apikey': EVOLUTION_API_KEY,
+                ...options.headers,
+            },
+        });
+
+        clearTimeout(timeout);
+
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/d963620b-ce3a-4920-aa1b-776bfde69876', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ location: 'evolutionService.js:22', message: 'Evolution API response status', data: { endpoint, status: response.status, ok: response.ok }, timestamp: Date.now(), sessionId: 'debug-session', runId: 'run1', hypothesisId: 'D' }) }).catch(() => { });
+        // #endregion
+
+        if (!response.ok) {
+            const error = await response.text();
+            // #region agent log
+            fetch('http://127.0.0.1:7242/ingest/d963620b-ce3a-4920-aa1b-776bfde69876', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ location: 'evolutionService.js:32', message: 'Evolution API error response', data: { endpoint, status: response.status, errorText: error.substring(0, 200) }, timestamp: Date.now(), sessionId: 'debug-session', runId: 'run1', hypothesisId: 'E' }) }).catch(() => { });
+            // #endregion
+            throw new Error(`Evolution API error: ${response.status} - ${error}`);
+        }
+
+        const jsonData = await response.json();
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/d963620b-ce3a-4920-aa1b-776bfde69876', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ location: 'evolutionService.js:36', message: 'Evolution API JSON parsed', data: { endpoint, responseKeys: Object.keys(jsonData), responseSample: JSON.stringify(jsonData).substring(0, 300) }, timestamp: Date.now(), sessionId: 'debug-session', runId: 'run1', hypothesisId: 'A' }) }).catch(() => { });
+        // #endregion
+        return jsonData;
+    } catch (error) {
+        clearTimeout(timeout);
+        if (error.name === 'AbortError') {
+            console.error(`[Evolution API] Request timeout: ${url}`);
+            throw new Error('Request to Evolution API timed out after 30 seconds');
+        }
+        throw error;
     }
-
-    return response.json();
 }
 
 /**
@@ -78,18 +106,28 @@ export async function createInstance(userId, instanceName) {
     }
 }
 
-/**
- * Obtém QR Code para conexão
- */
 export async function getQrCode(instanceId) {
     try {
+        // O endpoint /instance/connect retorna os dados de conexão, incluindo o QR code
         const response = await evolutionFetch(`/instance/connect/${instanceId}`);
+
+        // A resposta pode estar em diferentes formatos em diferentes versões da API
+        let extractedQrCode = null;
+
+        // Tenta extrair de vários locais possíveis
+        if (response.base64) extractedQrCode = response.base64;
+        else if (response.qrcode?.base64) extractedQrCode = response.qrcode.base64;
+        else if (response.code?.base64) extractedQrCode = response.code.base64;
+        else if (response.data?.qrcode) extractedQrCode = response.data.qrcode;
+        else if (response.data?.base64) extractedQrCode = response.data.base64;
+        else if (response.qrcode) extractedQrCode = typeof response.qrcode === 'string' ? response.qrcode : response.qrcode.base64 || response.qrcode.qrcode;
+        else if (response.code) extractedQrCode = typeof response.code === 'string' ? response.code : response.code.base64 || response.code.qrcode;
 
         return {
             success: true,
             data: {
-                qrcode: response.base64 || response.qrcode || response.code,
-                pairingCode: response.pairingCode,
+                qrcode: extractedQrCode,
+                pairingCode: response.pairingCode || response.code?.pairingCode || response.qrcode?.pairingCode || response.data?.pairingCode,
             },
         };
     } catch (error) {
@@ -104,13 +142,17 @@ export async function getQrCode(instanceId) {
 export async function getConnectionStatus(instanceId) {
     try {
         const response = await evolutionFetch(`/instance/connectionState/${instanceId}`);
+        console.log(`[DEBUG] Connection State for ${instanceId}:`, JSON.stringify(response, null, 2));
+
+        // Fix: Evolution v2 pode retornar { instance: { state: 'open' } } ou { state: 'open' }
+        const state = response.instance?.state || response.state;
 
         // Atualiza status no banco
         if (supabaseAdmin) {
             await supabaseAdmin
                 .from('whatsapp_instances')
                 .update({
-                    status: response.state === 'open' ? 'connected' : 'disconnected',
+                    status: state === 'open' ? 'connected' : 'disconnected',
                     updated_at: new Date().toISOString(),
                 })
                 .eq('instance_id', instanceId);
@@ -119,8 +161,8 @@ export async function getConnectionStatus(instanceId) {
         return {
             success: true,
             data: {
-                status: response.state === 'open' ? 'connected' : 'disconnected',
-                state: response.state,
+                status: state === 'open' ? 'connected' : 'disconnected',
+                state: state,
             },
         };
     } catch (error) {
@@ -180,10 +222,16 @@ export async function downloadMedia(instanceId, messageKey) {
  */
 export async function deleteInstance(instanceId) {
     try {
-        await evolutionFetch(`/instance/logout/${instanceId}`, { method: 'DELETE' });
-        await evolutionFetch(`/instance/delete/${instanceId}`, { method: 'DELETE' });
+        // Tenta desconectar e remover na API, mas ignora erros se já não existir
+        try {
+            await evolutionFetch(`/instance/logout/${instanceId}`, { method: 'DELETE' });
+        } catch (e) { console.warn('Logout warning:', e.message); }
 
-        // Remove do banco
+        try {
+            await evolutionFetch(`/instance/delete/${instanceId}`, { method: 'DELETE' });
+        } catch (e) { console.warn('Delete warning:', e.message); }
+
+        // Remove do banco SEMPRE
         if (supabaseAdmin) {
             await supabaseAdmin
                 .from('whatsapp_instances')
@@ -193,10 +241,12 @@ export async function deleteInstance(instanceId) {
 
         return { success: true };
     } catch (error) {
-        console.error('Erro ao deletar instância:', error);
+        console.error('Erro ao remover instância:', error);
         return { success: false, error: error.message };
     }
 }
+
+
 
 /**
  * Configura webhook para receber mensagens

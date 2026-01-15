@@ -17,12 +17,16 @@ import { securityHeaders, apiRateLimiter } from './src/middleware/security.js';
 
 // Configurações e Utilitários
 import AIServiceFactory from './src/services/AIServiceFactory.js';
+import messageProcessor from './src/services/messageProcessor.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
 const PORT = process.env.PORT || 3001;
+
+// Inicializa o processador de mensagens
+messageProcessor.start();
 
 // Configurar trust proxy para express-rate-limit (necessário por estar atrás do Traefik/Easypanel)
 app.set('trust proxy', 1);

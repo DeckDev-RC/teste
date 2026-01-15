@@ -133,7 +133,21 @@ function App() {
             await supabase.auth.signOut()
             toast.success('Sessão encerrada')
         } catch (error) {
-            toast.error('Erro ao sair')
+            console.error('Erro ao sair:', error)
+            // Mesmo se houver erro no servidor (ex: 403), limpamos o estado local
+            // Isso garante que o usuário consiga "sair" da UI
+            toast.success('Sessão encerrada localmente')
+        } finally {
+            // Forçar limpeza do estado para garantir redirecionamento
+            setIsAuthenticated(false)
+            setUser(null)
+            setUserRole(null)
+            // Limpar localStorage vindo do Supabase preventivamente
+            Object.keys(localStorage).forEach(key => {
+                if (key.startsWith('sb-') || key.includes('supabase.auth.token')) {
+                    localStorage.removeItem(key)
+                }
+            })
         }
     }
 

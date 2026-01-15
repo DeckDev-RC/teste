@@ -69,11 +69,27 @@ export default function WhatsAppPage() {
 
     const loadQrCode = async (instanceId) => {
         try {
+            // #region agent log
+            fetch('http://127.0.0.1:7242/ingest/d963620b-ce3a-4920-aa1b-776bfde69876',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'WhatsAppPage.jsx:70',message:'loadQrCode called',data:{instanceId},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+            // #endregion
             const result = await authenticatedJsonFetch(`/api/whatsapp/qrcode/${instanceId}`);
+            // #region agent log
+            fetch('http://127.0.0.1:7242/ingest/d963620b-ce3a-4920-aa1b-776bfde69876',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'WhatsAppPage.jsx:73',message:'API response received',data:{success:result?.success,hasData:!!result?.data,hasQrcode:!!result?.data?.qrcode,qrcodeType:typeof result?.data?.qrcode,qrcodeLength:result?.data?.qrcode?.length || 0,resultKeys:result ? Object.keys(result) : []},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+            // #endregion
             if (result.success && result.data.qrcode) {
                 setQrCode(result.data.qrcode);
+                // #region agent log
+                fetch('http://127.0.0.1:7242/ingest/d963620b-ce3a-4920-aa1b-776bfde69876',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'WhatsAppPage.jsx:75',message:'QR code set in state',data:{qrcodeSet:true},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+                // #endregion
+            } else {
+                // #region agent log
+                fetch('http://127.0.0.1:7242/ingest/d963620b-ce3a-4920-aa1b-776bfde69876',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'WhatsAppPage.jsx:78',message:'QR code not set - condition failed',data:{success:result?.success,hasData:!!result?.data,hasQrcode:!!result?.data?.qrcode},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+                // #endregion
             }
         } catch (error) {
+            // #region agent log
+            fetch('http://127.0.0.1:7242/ingest/d963620b-ce3a-4920-aa1b-776bfde69876',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'WhatsAppPage.jsx:82',message:'Error loading QR code',data:{errorMessage:error.message},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
+            // #endregion
             console.error('Erro ao carregar QR:', error);
         }
     };

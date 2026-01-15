@@ -123,6 +123,34 @@ class AIServiceFactory {
    * Obtém informações sobre os modelos disponíveis em todos os provedores
    * @returns {Promise<Object>} Modelos disponíveis por provedor
    */
+  /**
+   * Analisa uma imagem com o provedor selecionado
+   * @param {Buffer|string} imageData - Dados da imagem
+   * @param {string} mimeType - Tipo MIME da imagem
+   * @param {string} prompt - Prompt para análise
+   * @param {string} provider - Nome do provedor (opcional)
+   * @returns {Promise<string|Object>} Resultado da análise
+   */
+  async analyzeImage(imageData, mimeType, prompt, provider = this.defaultProvider) {
+    const service = this.getService(provider);
+
+    if (typeof service.analyzeImage !== 'function') {
+      throw new Error(`O provedor '${provider}' não suporta análise de imagens.`);
+    }
+
+    // Adaptador para diferentes assinaturas de chamadas
+    // GeminiService.analyzeImage(prompt, imageData, mimeType)
+    if (provider === 'gemini') {
+      const base64Data = Buffer.isBuffer(imageData)
+        ? imageData.toString('base64')
+        : imageData;
+
+      return service.analyzeImage(prompt, base64Data, mimeType);
+    }
+
+    return service.analyzeImage(imageData, mimeType, prompt);
+  }
+
   async getAllModels() {
     const models = {};
 
