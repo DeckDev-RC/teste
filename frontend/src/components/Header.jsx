@@ -128,46 +128,49 @@ export default function Header({ title }) {
                             animate={{ x: 0 }}
                             exit={{ x: '-100%' }}
                             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-                            className="fixed top-0 left-0 bottom-0 w-[280px] bg-[#0f0f0f] border-r border-dark-600 z-[52] lg:hidden p-6 flex flex-col shadow-2xl backdrop-blur-xl"
+                            className="fixed top-0 left-0 bottom-0 w-[280px] bg-dark-900 border-r border-dark-600 z-[60] lg:hidden p-6 flex flex-col shadow-[0_0_50px_rgba(0,0,0,0.5)]"
+                            style={{ backgroundColor: '#141414' }}
                         >
                             <div className="flex items-center justify-between mb-8">
                                 <img src="/logo.png" alt="Logo" className="h-8 w-auto" />
                                 <button
                                     onClick={() => setIsMenuOpen(false)}
-                                    className="p-2 text-dark-400"
+                                    className="p-2 text-dark-400 hover:text-light-100 transition-colors"
                                 >
                                     <X className="w-6 h-6" />
                                 </button>
                             </div>
 
-                            <div className="mb-8">
-                                <span className="text-[10px] font-black text-dark-500 uppercase tracking-[0.2em] mb-4 block">Navegação</span>
-                                <div className="space-y-2">
-                                    {navItems.map((item) => {
-                                        const isActive = location.pathname === item.path;
-                                        const Icon = item.icon;
+                            <div className="overflow-y-auto flex-1 h-full pr-2 custom-scrollbar">
+                                <div className="mb-8">
+                                    <span className="text-[10px] font-black text-dark-500 uppercase tracking-[0.2em] mb-4 block">Navegação</span>
+                                    <div className="space-y-2">
+                                        {navItems.map((item) => {
+                                            const isActive = location.pathname === item.path;
+                                            const Icon = item.icon;
 
-                                        return (
-                                            <button
-                                                key={item.path}
-                                                onClick={() => {
-                                                    navigate(item.path);
-                                                    setIsMenuOpen(false);
-                                                }}
-                                                className={`
-                                                    w-full flex items-center gap-4 px-4 py-3 rounded-xl text-[12px] font-bold transition-all
-                                                    ${isActive
-                                                        ? 'bg-brand-blue/10 text-brand-blue border border-brand-blue/20'
-                                                        : 'text-dark-300 hover:bg-dark-800'
-                                                    }
-                                                `}
-                                            >
-                                                <Icon className="w-4 h-4" />
-                                                {item.label}
-                                                {isActive && <ChevronRight className="w-4 h-4 ml-auto" />}
-                                            </button>
-                                        );
-                                    })}
+                                            return (
+                                                <button
+                                                    key={item.path}
+                                                    onClick={() => {
+                                                        navigate(item.path);
+                                                        setIsMenuOpen(false);
+                                                    }}
+                                                    className={`
+                                                        w-full flex items-center gap-4 px-4 py-3 rounded-xl text-[12px] font-bold transition-all
+                                                        ${isActive
+                                                            ? 'bg-brand-blue/10 text-brand-blue border border-brand-blue/20'
+                                                            : 'text-dark-300 hover:bg-dark-800'
+                                                        }
+                                                    `}
+                                                >
+                                                    <Icon className="w-4 h-4" />
+                                                    {item.label}
+                                                    {isActive && <ChevronRight className="w-4 h-4 ml-auto" />}
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
                                 </div>
                             </div>
 
