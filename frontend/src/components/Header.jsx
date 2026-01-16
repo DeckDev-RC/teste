@@ -119,7 +119,7 @@ export default function Header({ title }) {
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
                             onClick={() => setIsMenuOpen(false)}
-                            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[51] lg:hidden"
+                            className="fixed inset-0 bg-black/60 backdrop-blur-md z-[51] lg:hidden"
                         />
 
                         {/* Drawer */}
@@ -128,7 +128,7 @@ export default function Header({ title }) {
                             animate={{ x: 0 }}
                             exit={{ x: '-100%' }}
                             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-                            className="fixed top-0 left-0 bottom-0 w-[280px] bg-dark-900 border-r border-dark-600 z-[52] lg:hidden p-6 flex flex-col"
+                            className="fixed top-0 left-0 bottom-0 w-[280px] bg-[#0f0f0f] border-r border-dark-600 z-[52] lg:hidden p-6 flex flex-col shadow-2xl backdrop-blur-xl"
                         >
                             <div className="flex items-center justify-between mb-8">
                                 <img src="/logo.png" alt="Logo" className="h-8 w-auto" />
