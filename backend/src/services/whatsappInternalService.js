@@ -24,21 +24,53 @@ const logger = pino({ level: 'silent' });
  * Permite que as chaves de sessão sejam salvas no banco em vez de arquivos locais.
  */
 async function useSupabaseAuthState(instanceId) {
-    const writeData = async (data, id) => {
-        try {
-            // Usa BufferJSON.replacer para garantir que Buffers sejam serializados corretamente para o Supabase
-            const serializedData = JSON.parse(JSON.stringify(data, BufferJSON.replacer));
-
-            const { error } = await supabaseAdmin
-                .from('whatsapp_sessions')
-                .upsert({
-                    instance_id: `${instanceId}:${id}`,
-                    data: serializedData
-                });
-            if (error) console.error(`❌ Erro ao salvar sessão (${id}):`, error.message);
-        } catch (err) {
-            console.error(`❌ Erro fatal ao salvar sessão (${id}):`, err.message);
+    // Implementação de fila com concorrência limitada para o banco
+    const dbQueue = {
+        running: 0,
+        concurrency: 5,
+        queue: [],
+        add(fn) {
+            return new Promise((resolve, reject) => {
+                this.queue.push({ fn, resolve, reject });
+                this.process();
+            });
+        },
+        process() {
+            if (this.running >= this.concurrency || this.queue.length === 0) return;
+            this.running++;
+            const { fn, resolve, reject } = this.queue.shift();
+            fn().then(resolve).catch(reject).finally(() => {
+                this.running--;
+                this.process();
+            });
         }
+    };
+
+    const writeData = async (data, id) => {
+        return dbQueue.add(async () => {
+            let retries = 3;
+            while (retries > 0) {
+                try {
+                    const serializedData = JSON.parse(JSON.stringify(data, BufferJSON.replacer));
+                    const { error } = await supabaseAdmin
+                        .from('whatsapp_sessions')
+                        .upsert({
+                            instance_id: `${instanceId}:${id}`,
+                            data: serializedData
+                        });
+                    if (error) throw error;
+                    return; // Sucesso
+                } catch (err) {
+                    retries--;
+                    if (retries === 0) {
+                        console.error(`❌ Erro persistente ao salvar sessão (${id}):`, err.message);
+                        throw err;
+                    }
+                    console.warn(`⚠️ Erro ao salvar sessão (${id}), tentando novamente em 1s... Restam ${retries}`);
+                    await new Promise(r => setTimeout(r, 1000));
+                }
+            }
+        });
     };
 
     const readData = async (id) => {
@@ -51,43 +83,38 @@ async function useSupabaseAuthState(instanceId) {
 
             if (error || !data) return null;
 
-            // Reviver profundo e recursivo para garantir que todos os Buffers sejam restaurados
             const reviveDeeply = (obj) => {
                 if (!obj || typeof obj !== 'object') return obj;
-
-                // Se parece com um Buffer serializado, converte
                 if (obj.type === 'Buffer' && (typeof obj.data === 'string' || Array.isArray(obj.data))) {
                     return Buffer.from(obj.data, typeof obj.data === 'string' ? 'base64' : undefined);
                 }
                 if (obj._type === 'Buffer' && typeof obj._data === 'string') {
                     return Buffer.from(obj._data, 'base64');
                 }
-
-                // Recursão para arrays e objetos
-                if (Array.isArray(obj)) {
-                    return obj.map(reviveDeeply);
-                }
-
+                if (Array.isArray(obj)) return obj.map(reviveDeeply);
                 const revived = {};
-                for (const key in obj) {
-                    revived[key] = reviveDeeply(obj[key]);
-                }
+                for (const key in obj) revived[key] = reviveDeeply(obj[key]);
                 return revived;
             };
 
             const rawData = typeof data.data === 'string' ? JSON.parse(data.data) : data.data;
             return reviveDeeply(rawData);
         } catch (err) {
-            console.error(`❌ Erro ao ler sessão (${id}):`, err.message);
+            // Ignora erros de "not found"
+            if (!err.message?.includes('JSON object requested, but 0 rows were returned')) {
+                console.error(`❌ Erro ao ler sessão (${id}):`, err.message);
+            }
             return null;
         }
     };
 
     const removeData = async (id) => {
-        await supabaseAdmin
-            .from('whatsapp_sessions')
-            .delete()
-            .eq('instance_id', `${instanceId}:${id}`);
+        return dbQueue.add(async () => {
+            await supabaseAdmin
+                .from('whatsapp_sessions')
+                .delete()
+                .eq('instance_id', `${instanceId}:${id}`);
+        });
     };
 
     const creds = await readData('creds') || initAuthCreds();
@@ -98,13 +125,10 @@ async function useSupabaseAuthState(instanceId) {
             keys: makeCacheableSignalKeyStore({
                 get: async (type, ids) => {
                     const data = {};
+                    // Leitura pode ser em paralelo, mas limitada se necessário. Por enquanto, fazemos em lote por tipo.
                     await Promise.all(
                         ids.map(async (id) => {
-                            let value = await readData(`${type}-${id}`);
-                            if (type === 'app-state-sync-key' && value) {
-                                // value = proto.Message.AppStateSyncKeyData.fromObject(value)
-                            }
-                            data[id] = value;
+                            data[id] = await readData(`${type}-${id}`);
                         })
                     );
                     return data;
@@ -118,7 +142,8 @@ async function useSupabaseAuthState(instanceId) {
                             tasks.push(value ? writeData(value, storeId) : removeData(storeId));
                         }
                     }
-                    await Promise.all(tasks);
+                    // Aqui tasks já são controladas pela dbQueue internamente
+                    await Promise.allSettled(tasks);
                 }
             }, logger)
         },
