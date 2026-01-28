@@ -58,7 +58,10 @@ export const getCompanies = async (req, res) => {
         const allowed = req.user?.allowed_companies;
 
         if (!isAdmin && allowed && Array.isArray(allowed)) {
+            console.log(`[SYSTEM] Filtering companies for user ${req.user?.id}. Allowed:`, allowed);
+            const beforeCount = companiesList.length;
             companiesList = companiesList.filter(c => allowed.includes(c.id));
+            console.log(`[SYSTEM] Filtered from ${beforeCount} to ${companiesList.length} companies.`);
         }
 
         res.json({

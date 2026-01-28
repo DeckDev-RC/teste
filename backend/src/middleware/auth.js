@@ -87,6 +87,8 @@ export const authenticate = async (req, res, next) => {
             allowed_companies: profile?.allowed_companies || null // NULL = todas (admin) ou conforme lógica do controller
         };
 
+        console.log(`[AUTH] User Authenticated: ${user.id} (${req.user.role}) - Allowed Companies:`, req.user.allowed_companies);
+
         next();
     } catch (error) {
         // Log de erro de autenticação
