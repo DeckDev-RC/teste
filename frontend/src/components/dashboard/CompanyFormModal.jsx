@@ -169,7 +169,7 @@ export default function CompanyFormModal({ isOpen, onClose, company = null, onSu
                             {/* Coluna Direita: Prompts */}
                             <div className="space-y-6">
                                 <div>
-                                    <label className="block text-[10px] font-black text-dark-400 uppercase tracking-widest mb-2 ml-1 flex items-center gap-2">
+                                    <label className="text-[10px] font-black text-dark-400 uppercase tracking-widest mb-2 ml-1 flex items-center gap-2">
                                         Prompt: Contas a Receber
                                         <Info className="w-3 h-3 text-brand-blue" />
                                     </label>
@@ -183,7 +183,7 @@ export default function CompanyFormModal({ isOpen, onClose, company = null, onSu
                                 </div>
 
                                 <div>
-                                    <label className="block text-[10px] font-black text-dark-400 uppercase tracking-widest mb-2 ml-1 flex items-center gap-2">
+                                    <label className="text-[10px] font-black text-dark-400 uppercase tracking-widest mb-2 ml-1 flex items-center gap-2">
                                         Prompt: Contas a Pagar
                                         <Info className="w-3 h-3 text-brand-blue" />
                                     </label>
