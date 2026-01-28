@@ -107,15 +107,19 @@ export default function PermissionsPage() {
         if (!selectedUser) return;
         setSaving(true);
         try {
-            const result = await updateUserCompanies(selectedUser.id || selectedUser.userId, selectedCompanies);
+            const result = await updateUserCompanies(selectedUser.id || selectedUser.user_id || selectedUser.userId, selectedCompanies);
             if (result.success) {
                 toast.success(`Permissões de ${selectedUser.full_name || selectedUser.email} atualizadas!`);
                 // Update local user state
-                setUsers(prev => prev.map(u =>
-                    (u.id === selectedUser.id || u.userId === selectedUser.userId)
+                setUsers(prev => prev.map(u => {
+                    const uId = u.id || u.user_id || u.userId;
+                    const sId = selectedUser.id || selectedUser.user_id || selectedUser.userId;
+                    const isMatch = (uId && sId && uId === sId) || (u.email === selectedUser.email);
+
+                    return isMatch
                         ? { ...u, allowed_companies: selectedCompanies }
-                        : u
-                ));
+                        : u;
+                }));
             } else {
                 toast.error(result.error || 'Erro ao salvar');
             }
@@ -165,12 +169,14 @@ export default function PermissionsPage() {
 
                     <div className="flex-1 overflow-y-auto custom-scrollbar p-3 space-y-2">
                         {filteredUsers.map(u => {
-                            const isUserSelected = selectedUser && (selectedUser.id === u.id || selectedUser.userId === u.userId);
+                            const uId = u.id || u.user_id || u.userId;
+                            const sId = selectedUser?.id || selectedUser?.user_id || selectedUser?.userId;
+                            const isUserSelected = selectedUser && ((uId && sId && uId === sId) || (u.email === selectedUser.email));
                             const activeCount = (u.allowed_companies || []).length;
 
                             return (
                                 <button
-                                    key={u.id || u.userId}
+                                    key={u.id || u.user_id || u.userId || u.email}
                                     onClick={() => handleSelectUser(u)}
                                     className={`w-full flex items-center gap-4 p-4 rounded-2xl transition-all text-left border ${isUserSelected
                                         ? 'bg-brand-blue/10 border-brand-blue/50'
