@@ -62,7 +62,7 @@ export default function PermissionsPage() {
             }
 
             if (companiesRes.success) {
-                setCompanies(companiesRes.data || []);
+                setCompanies(companiesRes.data.companies || []);
             }
         } catch (error) {
             console.error('Erro ao buscar dados:', error);
@@ -73,6 +73,7 @@ export default function PermissionsPage() {
     };
 
     const filteredUsers = useMemo(() => {
+        if (!Array.isArray(users)) return [];
         return users.filter(u =>
             (u.email || '').toLowerCase().includes(userSearchTerm.toLowerCase()) ||
             (u.full_name || '').toLowerCase().includes(userSearchTerm.toLowerCase())
@@ -80,9 +81,10 @@ export default function PermissionsPage() {
     }, [users, userSearchTerm]);
 
     const filteredCompanies = useMemo(() => {
+        if (!Array.isArray(companies)) return [];
         return companies.filter(c =>
-            c.name.toLowerCase().includes(companySearchTerm.toLowerCase()) ||
-            c.id.toLowerCase().includes(companySearchTerm.toLowerCase())
+            (c.name || '').toLowerCase().includes(companySearchTerm.toLowerCase()) ||
+            (c.id || '').toLowerCase().includes(companySearchTerm.toLowerCase())
         );
     }, [companies, companySearchTerm]);
 
