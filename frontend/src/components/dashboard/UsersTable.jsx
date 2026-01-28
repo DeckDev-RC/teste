@@ -1,7 +1,7 @@
+import { useState, useMemo, useEffect } from 'react';
 import { ChevronUp, ChevronDown, ShieldCheck, Settings } from 'lucide-react';
 import CompanyPermissionModal from './CompanyPermissionModal';
 import { authenticatedFetch } from '../../utils/api';
-import { useEffect } from 'react';
 
 /**
  * Tabela de usuários com paginação e ordenação

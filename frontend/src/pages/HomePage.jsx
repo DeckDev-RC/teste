@@ -195,7 +195,7 @@ export default function HomePage() {
             }
 
             // Fetch Companies
-            const compRes = await fetch('/api/companies')
+            const compRes = await authenticatedFetch('/api/companies')
             const compData = await compRes.json()
             if (compData.success) {
                 const loadedCompanies = compData.data.companies.map(c => ({
@@ -210,7 +210,7 @@ export default function HomePage() {
             }
 
             // Fetch Providers
-            const provRes = await fetch('/api/providers')
+            const provRes = await authenticatedFetch('/api/providers')
             const provData = await provRes.json()
             if (provData.success) {
                 const loadedProviders = provData.data.availableProviders.map(id => ({
