@@ -6,7 +6,11 @@ import creditsService from '../services/creditsService.js';
 import { getAvailableAnalysisTypes } from '../config/prompts.js';
 import { createClient } from '@supabase/supabase-js';
 
-const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY);
+const supabaseUrl = process.env.SUPABASE_URL || 'http://31.97.164.208:8000';
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY;
+
+// Usamos a service key para evitar problemas de RLS no backend
+const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
 export const getProviders = (req, res) => {
     res.json({

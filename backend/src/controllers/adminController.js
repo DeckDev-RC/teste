@@ -317,6 +317,8 @@ export const setUserCompanies = async (req, res) => {
             });
         }
 
+        console.log(`[ADMIN] Updating Companies: User=${userId} Allowed=`, allowedCompanies);
+
         // Atualizar allowed_companies do usuário
         const { data, error } = await supabaseAdmin
             .from('profiles')
@@ -328,7 +330,12 @@ export const setUserCompanies = async (req, res) => {
             .select()
             .single();
 
-        if (error) throw error;
+        if (error) {
+            console.error(`[ADMIN] Error updating user ${userId}:`, error);
+            throw error;
+        }
+
+        console.log(`[ADMIN] Update successful for user ${userId}. New data:`, data.allowed_companies);
 
         res.json({
             success: true,

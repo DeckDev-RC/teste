@@ -107,7 +107,10 @@ export default function PermissionsPage() {
         if (!selectedUser) return;
         setSaving(true);
         try {
-            const result = await updateUserCompanies(selectedUser.id || selectedUser.user_id || selectedUser.userId, selectedCompanies);
+            const uIdToSend = selectedUser.id || selectedUser.user_id || selectedUser.userId;
+            console.log(`[PERMISSIONS] Sending Update: User=${uIdToSend} Companies=`, selectedCompanies);
+
+            const result = await updateUserCompanies(uIdToSend, selectedCompanies);
             if (result.success) {
                 toast.success(`Permissões de ${selectedUser.full_name || selectedUser.email} atualizadas!`);
                 // Update local user state

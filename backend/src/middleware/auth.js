@@ -7,10 +7,16 @@ import auditLogService from '../services/auditLogService.js';
 
 const supabaseUrl = process.env.SUPABASE_URL || 'http://31.97.164.208:8000';
 const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY;
 
-// Cliente Supabase para validar tokens
+// Cliente Supabase Anon (para validar tokens)
 const supabase = supabaseAnonKey
     ? createClient(supabaseUrl, supabaseAnonKey)
+    : null;
+
+// Cliente Supabase Admin (para bypass RLS no backend)
+const supabaseAdmin = supabaseServiceKey
+    ? createClient(supabaseUrl, supabaseServiceKey)
     : null;
 
 /**
@@ -73,9 +79,10 @@ export const authenticate = async (req, res, next) => {
             });
         }
 
-        // SEGURANÇA: Adicionar apenas ID do usuário e permissões do perfil
-        // Buscar informações estendidas do perfil (role, allowed_companies)
-        const { data: profile } = await supabase
+        // SEGURANÇA: Buscar informações do perfil usando conta admin (bypass RLS)
+        // Isso é necessário porque o cliente anon no node não tem o JWT do usuário automaticamente
+        const dbClient = supabaseAdmin || supabase;
+        const { data: profile } = await dbClient
             .from('profiles')
             .select('role, allowed_companies')
             .eq('id', user.id)
