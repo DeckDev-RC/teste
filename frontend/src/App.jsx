@@ -12,6 +12,7 @@ const RegisterPage = lazy(() => import('./pages/RegisterPage'))
 const DashboardPage = lazy(() => import('./pages/DashboardPage'))
 const UserDashboardPage = lazy(() => import('./pages/UserDashboardPage'))
 const WhatsAppPage = lazy(() => import('./pages/WhatsAppPage'))
+const CompaniesPage = lazy(() => import('./pages/CompaniesPage'))
 
 // Componente de loading para Suspense
 const PageLoader = () => (
@@ -202,6 +203,12 @@ function App() {
                         path="/history"
                         element={
                             isAuthenticated ? <div className="min-h-screen bg-dark-900 flex items-center justify-center text-light-100">Histórico - Em breve</div> : <Navigate to="/login" replace />
+                        }
+                    />
+                    <Route
+                        path="/admin/companies"
+                        element={
+                            isAuthenticated && isMaster ? <CompaniesPage /> : <Navigate to="/" replace />
                         }
                     />
                     <Route

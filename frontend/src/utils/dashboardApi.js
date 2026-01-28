@@ -186,3 +186,53 @@ export async function updateUserCompanies(userId, companies) {
     });
     return await response.json();
 }
+
+/**
+ * Busca todas as empresas cadastradas no catálogo
+ */
+export async function getAdminCompanies() {
+    const url = `/api/admin/companies`;
+    const response = await authenticatedFetch(url);
+    return await response.json();
+}
+
+/**
+ * Cria uma nova empresa no catálogo
+ */
+export async function createAdminCompany(companyData) {
+    const url = `/api/admin/companies`;
+    const response = await authenticatedFetch(url, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(companyData)
+    });
+    return await response.json();
+}
+
+/**
+ * Atualiza uma empresa existente
+ */
+export async function updateAdminCompany(id, companyData) {
+    const url = `/api/admin/companies/${id}`;
+    const response = await authenticatedFetch(url, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(companyData)
+    });
+    return await response.json();
+}
+
+/**
+ * Remove uma empresa do catálogo
+ */
+export async function deleteAdminCompany(id) {
+    const url = `/api/admin/companies/${id}`;
+    const response = await authenticatedFetch(url, {
+        method: 'DELETE'
+    });
+    return await response.json();
+}

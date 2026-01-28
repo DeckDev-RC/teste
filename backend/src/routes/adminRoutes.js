@@ -13,6 +13,12 @@ import {
     setUserCompanies,
     getAllUsers
 } from '../controllers/adminController.js';
+import {
+    getAllCompanies,
+    createCompany,
+    updateCompany,
+    deleteCompany
+} from '../controllers/companyController.js';
 
 const router = express.Router();
 
@@ -27,5 +33,11 @@ router.post('/users/:userId/credits/reset', express.json(), resetUserCredits); /
 router.post('/users/:userId/credits/add', express.json(), addUserCredits); // Adicionar créditos a um usuário
 router.put('/users/:userId/role', express.json(), setUserRole); // Definir role de um usuário
 router.put('/users/:userId/companies', express.json(), setUserCompanies); // Definir empresas permitidas
+
+// Gestão de Empresas (Catálogo)
+router.get('/companies', getAllCompanies);
+router.post('/companies', express.json(), createCompany);
+router.put('/companies/:id', express.json(), updateCompany);
+router.delete('/companies/:id', deleteCompany);
 
 export default router;

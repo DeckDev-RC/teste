@@ -3,7 +3,10 @@ import cacheHelper from '../utils/cacheHelper.js';
 import analysisStore from '../utils/analysisStore.js';
 import usageService from '../services/usageService.js';
 import creditsService from '../services/creditsService.js';
-import { COMPANIES, getAvailableAnalysisTypes } from '../config/prompts.js';
+import { getAvailableAnalysisTypes } from '../config/prompts.js';
+import { createClient } from '@supabase/supabase-js';
+
+const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY);
 
 export const getProviders = (req, res) => {
     res.json({
@@ -34,29 +37,41 @@ export const getStats = async (req, res) => {
     }
 };
 
-export const getCompanies = (req, res) => {
-    // Converte o objeto COMPANIES de prompts.js para um formato amigável ao frontend
-    let companiesList = Object.entries(COMPANIES).map(([id, data]) => ({
-        id,
-        name: data.name || id,
-        icon: data.icon
-    }));
+export const getCompanies = async (req, res) => {
+    try {
+        // Buscar empresas do banco de dados
+        const { data: companiesFromDb, error } = await supabase
+            .from('companies')
+            .select('id, name, icon')
+            .order('name');
 
-    // Filtrar por permissão do usuário
-    const isAdmin = req.user?.role === 'master' || req.user?.role === 'admin';
-    const allowed = req.user?.allowed_companies;
+        if (error) throw error;
 
-    if (!isAdmin && allowed && Array.isArray(allowed)) {
-        companiesList = companiesList.filter(c => allowed.includes(c.id));
-    }
+        let companiesList = companiesFromDb.map(c => ({
+            id: c.id,
+            name: c.name,
+            icon: c.icon
+        }));
 
-    res.json({
-        success: true,
-        data: {
-            companies: companiesList,
-            availableTypes: getAvailableAnalysisTypes()
+        // Filtrar por permissão do usuário
+        const isAdmin = req.user?.role === 'master' || req.user?.role === 'admin';
+        const allowed = req.user?.allowed_companies;
+
+        if (!isAdmin && allowed && Array.isArray(allowed)) {
+            companiesList = companiesList.filter(c => allowed.includes(c.id));
         }
-    });
+
+        res.json({
+            success: true,
+            data: {
+                companies: companiesList,
+                availableTypes: getAvailableAnalysisTypes()
+            }
+        });
+    } catch (error) {
+        console.error('Erro ao buscar empresas:', error);
+        res.status(500).json({ success: false, error: 'Erro ao buscar empresas' });
+    }
 };
 
 export const setDefaultProvider = (req, res) => {

@@ -5,7 +5,10 @@ import analysisStore from '../utils/analysisStore.js';
 import imageHelper from '../utils/imageHelper.js';
 import hashHelper from '../utils/hashHelper.js';
 import fileNameHelper from '../utils/fileNameHelper.js';
-import { getPrompt, getAvailableAnalysisTypes } from '../config/prompts.js';
+import { getAvailableAnalysisTypes } from '../config/prompts.js';
+import { createClient } from '@supabase/supabase-js';
+
+const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY);
 import usageService from '../services/usageService.js';
 import creditsService from '../services/creditsService.js';
 import analysisLogService from '../services/analysisLogService.js';
@@ -101,7 +104,31 @@ export const analyzeFile = async (req, res) => {
             }
 
             const aiService = AIServiceFactory.getService(selectedProvider);
-            const prompt = getPrompt(analysisType);
+
+            // Buscar prompt da empresa no banco de dados
+            let prompt;
+            try {
+                const { data: companyData, error: companyError } = await supabase
+                    .from('companies')
+                    .select('financial_receipt_prompt, financial_payment_prompt')
+                    .eq('id', company)
+                    .single();
+
+                if (companyError || !companyData) {
+                    console.warn(`Empresa ${company} não encontrada no DB, usando fallback de prompts.js`);
+                    // Fallback para o comportamento antigo se não achar no DB (opcional, melhor erro)
+                    const { getPrompt } = await import('../config/prompts.js');
+                    prompt = getPrompt(company, analysisType);
+                } else {
+                    prompt = analysisType === 'financial-payment'
+                        ? companyData.financial_payment_prompt
+                        : companyData.financial_receipt_prompt;
+                }
+            } catch (pError) {
+                console.error('Erro ao buscar prompt no DB:', pError);
+                return res.status(500).json({ success: false, error: 'Erro ao configurar prompt de análise' });
+            }
+
             const isPDF = req.file.mimetype === 'application/pdf';
 
             try {
