@@ -6,7 +6,8 @@ const router = express.Router();
 
 router.get('/providers', getProviders);
 router.get('/stats', getStats);
-router.get('/companies', getCompanies);
+router.get('/companies', authenticate, getCompanies);
+
 router.get('/credits', authenticate, getUserCredits); // Requer autenticação
 router.post('/providers/default', express.json(), setDefaultProvider);
 router.post('/usage/reset', resetUsage); // DEV ONLY

@@ -50,6 +50,20 @@ export const analyzeFile = async (req, res) => {
         }
 
         const { analysisType = 'financial-receipt', company = 'enia-marcia-joias', provider } = req.body;
+
+        // SEGURANÇA: Verificar se o usuário tem permissão para esta empresa
+        const isAdmin = req.user?.role === 'master' || req.user?.role === 'admin';
+        const allowed = req.user?.allowed_companies;
+
+        if (!isAdmin && allowed && Array.isArray(allowed)) {
+            if (!allowed.includes(company)) {
+                return res.status(403).json({
+                    success: false,
+                    error: `Acesso negado para a empresa: ${company}`
+                });
+            }
+        }
+
         const filePath = req.file.path;
         const fileBuffer = await fs.readFile(filePath);
         const fileHash = await hashHelper.generateHash(fileBuffer);

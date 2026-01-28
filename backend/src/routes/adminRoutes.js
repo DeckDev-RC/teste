@@ -10,6 +10,7 @@ import {
     resetUserCredits,
     addUserCredits,
     setUserRole,
+    setUserCompanies,
     getAllUsers
 } from '../controllers/adminController.js';
 
@@ -25,5 +26,6 @@ router.get('/users/credits', getAllUsersCredits); // Listar créditos de todos o
 router.post('/users/:userId/credits/reset', express.json(), resetUserCredits); // Resetar créditos de um usuário
 router.post('/users/:userId/credits/add', express.json(), addUserCredits); // Adicionar créditos a um usuário
 router.put('/users/:userId/role', express.json(), setUserRole); // Definir role de um usuário
+router.put('/users/:userId/companies', express.json(), setUserCompanies); // Definir empresas permitidas
 
 export default router;

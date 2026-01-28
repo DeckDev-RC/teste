@@ -8,7 +8,7 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = process.env.SUPABASE_URL || 'http://31.97.164.208:8000';
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY;
 
-const supabaseAdmin = supabaseServiceKey 
+const supabaseAdmin = supabaseServiceKey
     ? createClient(supabaseUrl, supabaseServiceKey)
     : null;
 
@@ -39,11 +39,11 @@ export const getAllUsersCredits = async (req, res) => {
         let creditsWithProfiles = credits || [];
         if (creditsWithProfiles.length > 0) {
             const userIds = [...new Set(creditsWithProfiles.map(c => c.user_id).filter(Boolean))];
-            
+
             if (userIds.length > 0) {
                 const { data: profiles } = await supabaseAdmin
                     .from('profiles')
-                    .select('id, email, full_name, role')
+                    .select('id, email, full_name, role, allowed_companies')
                     .in('id', userIds);
 
                 const profilesMap = new Map((profiles || []).map(p => [p.id, p]));
@@ -275,7 +275,7 @@ export const getAllUsers = async (req, res) => {
 
         const { data: profiles, error } = await supabaseAdmin
             .from('profiles')
-            .select('id, email, full_name, role, created_at, updated_at')
+            .select('id, email, full_name, role, allowed_companies, created_at, updated_at')
             .order('created_at', { ascending: false });
 
         if (error) throw error;
@@ -291,6 +291,55 @@ export const getAllUsers = async (req, res) => {
         res.status(500).json({
             success: false,
             error: error.message || 'Erro ao listar usuários'
+        });
+    }
+};
+
+/**
+ * Definir empresas permitidas para um usuário
+ */
+export const setUserCompanies = async (req, res) => {
+    try {
+        const { userId } = req.params;
+        const { allowedCompanies } = req.body;
+
+        if (!userId || !Array.isArray(allowedCompanies)) {
+            return res.status(400).json({
+                success: false,
+                error: 'ID do usuário e lista de empresas (array) são obrigatórios'
+            });
+        }
+
+        if (!supabaseAdmin) {
+            return res.status(500).json({
+                success: false,
+                error: 'Sistema de administração não configurado'
+            });
+        }
+
+        // Atualizar allowed_companies do usuário
+        const { data, error } = await supabaseAdmin
+            .from('profiles')
+            .update({
+                allowed_companies: allowedCompanies,
+                updated_at: new Date().toISOString()
+            })
+            .eq('id', userId)
+            .select()
+            .single();
+
+        if (error) throw error;
+
+        res.json({
+            success: true,
+            message: `Permissões de empresas atualizadas para o usuário`,
+            data: data
+        });
+    } catch (error) {
+        console.error('Erro ao atualizar empresas do usuário:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message || 'Erro ao atualizar empresas'
         });
     }
 };

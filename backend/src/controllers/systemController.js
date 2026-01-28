@@ -36,11 +36,19 @@ export const getStats = async (req, res) => {
 
 export const getCompanies = (req, res) => {
     // Converte o objeto COMPANIES de prompts.js para um formato amigável ao frontend
-    const companiesList = Object.entries(COMPANIES).map(([id, data]) => ({
+    let companiesList = Object.entries(COMPANIES).map(([id, data]) => ({
         id,
         name: data.name || id,
         icon: data.icon
     }));
+
+    // Filtrar por permissão do usuário
+    const isAdmin = req.user?.role === 'master' || req.user?.role === 'admin';
+    const allowed = req.user?.allowed_companies;
+
+    if (!isAdmin && allowed && Array.isArray(allowed)) {
+        companiesList = companiesList.filter(c => allowed.includes(c.id));
+    }
 
     res.json({
         success: true,
@@ -63,9 +71,9 @@ export const setDefaultProvider = (req, res) => {
 export const getUserCredits = async (req, res) => {
     try {
         if (!req.user || !req.user.id) {
-            return res.status(401).json({ 
-                success: false, 
-                error: 'Usuário não autenticado' 
+            return res.status(401).json({
+                success: false,
+                error: 'Usuário não autenticado'
             });
         }
 
@@ -76,9 +84,9 @@ export const getUserCredits = async (req, res) => {
         });
     } catch (error) {
         console.error('Erro ao obter créditos:', error);
-        res.status(500).json({ 
-            success: false, 
-            error: error.message || 'Erro ao obter créditos' 
+        res.status(500).json({
+            success: false,
+            error: error.message || 'Erro ao obter créditos'
         });
     }
 };

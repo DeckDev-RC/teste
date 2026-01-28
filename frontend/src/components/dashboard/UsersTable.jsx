@@ -1,5 +1,7 @@
-import { useState, useMemo } from 'react';
-import { ChevronUp, ChevronDown } from 'lucide-react';
+import { ChevronUp, ChevronDown, ShieldCheck, Settings } from 'lucide-react';
+import CompanyPermissionModal from './CompanyPermissionModal';
+import { authenticatedFetch } from '../../utils/api';
+import { useEffect } from 'react';
 
 /**
  * Tabela de usuários com paginação e ordenação
@@ -8,7 +10,25 @@ export default function UsersTable({ users = [], className = '' }) {
     const [sortField, setSortField] = useState('creditsUsed');
     const [sortDirection, setSortDirection] = useState('desc');
     const [currentPage, setCurrentPage] = useState(1);
+    const [isPermissionModalOpen, setIsPermissionModalOpen] = useState(false);
+    const [selectedUser, setSelectedUser] = useState(null);
+    const [availableCompanies, setAvailableCompanies] = useState([]);
     const itemsPerPage = 10;
+
+    useEffect(() => {
+        const fetchCompanies = async () => {
+            try {
+                const response = await authenticatedFetch('/api/companies');
+                const data = await response.json();
+                if (data.success) {
+                    setAvailableCompanies(data.data.companies || []);
+                }
+            } catch (error) {
+                console.error('Erro ao buscar empresas:', error);
+            }
+        };
+        fetchCompanies();
+    }, []);
 
     const sortedUsers = useMemo(() => {
         const sorted = [...users].sort((a, b) => {
@@ -118,6 +138,9 @@ export default function UsersTable({ users = [], className = '' }) {
                                     </div>
                                 </div>
                             </th>
+                            <th className="text-right py-4 px-4 text-[10px] font-bold text-dark-500 uppercase tracking-widest">
+                                Ações
+                            </th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-dark-600/30">
@@ -150,11 +173,33 @@ export default function UsersTable({ users = [], className = '' }) {
                                         </span>
                                     </div>
                                 </td>
+                                <td className="py-4 px-4 text-right">
+                                    <button
+                                        onClick={() => {
+                                            setSelectedUser(user);
+                                            setIsPermissionModalOpen(true);
+                                        }}
+                                        className="p-2 hover:bg-brand-blue/10 rounded-lg text-dark-400 hover:text-brand-blue transition-all border border-transparent hover:border-brand-blue/30 group/btn"
+                                        title="Gerenciar Permissões"
+                                    >
+                                        <ShieldCheck className="w-4 h-4" />
+                                    </button>
+                                </td>
                             </tr>
                         ))}
                     </tbody>
                 </table>
             </div>
+
+            <CompanyPermissionModal
+                isOpen={isPermissionModalOpen}
+                onClose={() => setIsPermissionModalOpen(false)}
+                user={selectedUser}
+                availableCompanies={availableCompanies}
+                onUpdate={(userId, allowedCompanies) => {
+                    // Atualizar localmente o estado se necessário (opcional, já que o pai recarrega)
+                }}
+            />
 
             {totalPages > 1 && (
                 <div className="flex items-center justify-between mt-8 pt-6 border-t border-dark-600/50">

@@ -168,3 +168,21 @@ export async function getRecentAnalyses(filters = {}) {
     const response = await authenticatedFetch(url);
     return await response.json();
 }
+
+/**
+ * Atualiza as empresas permitidas para um usuário
+ * @param {string} userId - ID do usuário
+ * @param {Array<string>} companies - Array de slugs de empresas
+ * @returns {Promise<Object>} Resultado da operação
+ */
+export async function updateUserCompanies(userId, companies) {
+    const url = `/api/admin/users/${userId}/companies`;
+    const response = await authenticatedFetch(url, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ allowedCompanies: companies })
+    });
+    return await response.json();
+}

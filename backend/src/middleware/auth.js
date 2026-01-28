@@ -73,10 +73,18 @@ export const authenticate = async (req, res, next) => {
             });
         }
 
-        // SEGURANÇA: Adicionar apenas ID do usuário (não expor email em logs/erros)
+        // SEGURANÇA: Adicionar apenas ID do usuário e permissões do perfil
+        // Buscar informações estendidas do perfil (role, allowed_companies)
+        const { data: profile } = await supabase
+            .from('profiles')
+            .select('role, allowed_companies')
+            .eq('id', user.id)
+            .single();
+
         req.user = {
-            id: user.id
-            // email removido para evitar vazamento em logs
+            id: user.id,
+            role: profile?.role || 'user',
+            allowed_companies: profile?.allowed_companies || null // NULL = todas (admin) ou conforme lógica do controller
         };
 
         next();
