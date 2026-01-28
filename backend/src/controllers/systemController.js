@@ -58,14 +58,17 @@ export const getCompanies = async (req, res) => {
         }));
 
         // Filtrar por permissão do usuário
-        const isAdmin = req.user?.role === 'master' || req.user?.role === 'admin';
+        // Se houver uma lista explítica, filtramos para todos (incluindo Master/Admin)
+        // Se for NULL, mostramos tudo (comportamento padrão de admin)
         const allowed = req.user?.allowed_companies;
 
-        if (!isAdmin && allowed && Array.isArray(allowed)) {
-            console.log(`[SYSTEM] Filtering companies for user ${req.user?.id}. Allowed:`, allowed);
+        if (allowed && Array.isArray(allowed)) {
+            console.log(`[SYSTEM] Filtering companies for user ${req.user?.id}. Role: ${req.user?.role}. Allowed:`, allowed);
             const beforeCount = companiesList.length;
             companiesList = companiesList.filter(c => allowed.includes(c.id));
             console.log(`[SYSTEM] Filtered from ${beforeCount} to ${companiesList.length} companies.`);
+        } else {
+            console.log(`[SYSTEM] No explicit filtering for user ${req.user?.id}. Access: ALL`);
         }
 
         res.json({
