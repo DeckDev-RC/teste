@@ -13,6 +13,7 @@ const DashboardPage = lazy(() => import('./pages/DashboardPage'))
 const UserDashboardPage = lazy(() => import('./pages/UserDashboardPage'))
 const WhatsAppPage = lazy(() => import('./pages/WhatsAppPage'))
 const CompaniesPage = lazy(() => import('./pages/CompaniesPage'))
+const PermissionsPage = lazy(() => import('./pages/PermissionsPage'))
 
 // Componente de loading para Suspense
 const PageLoader = () => (
@@ -209,6 +210,12 @@ function App() {
                         path="/admin/companies"
                         element={
                             isAuthenticated && isMaster ? <CompaniesPage /> : <Navigate to="/" replace />
+                        }
+                    />
+                    <Route
+                        path="/admin/permissions"
+                        element={
+                            isAuthenticated && isMaster ? <PermissionsPage /> : <Navigate to="/" replace />
                         }
                     />
                     <Route

@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     LogOut, LayoutDashboard, MessageSquare, Home,
-    ChevronRight, Settings, Menu, X, Building2
+    ChevronRight, Settings, Menu, X, Building2, ShieldCheck
 } from 'lucide-react';
 import { AuthContext } from '../App';
 
@@ -26,6 +26,7 @@ export default function Header({ title }) {
 
     if (isMaster) {
         navItems.push({ label: 'Empresas', path: '/admin/companies', icon: Building2 });
+        navItems.push({ label: 'Acessos', path: '/admin/permissions', icon: ShieldCheck });
         navItems.push({ label: 'Painel Master', path: '/dashboard', icon: Settings, primary: true });
     }
 
