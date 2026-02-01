@@ -81,22 +81,42 @@ function applyTemplate(analysis, template) {
 
     const vars = {};
 
-    // 1. Tentar extrair data (XX-XX)
-    const dateMatch = analysis.match(/(\d{2}-\d{2})/);
-    if (dateMatch) vars['DATA'] = dateMatch[1];
+    // 1. Extração Dinâmica (KEY: VALUE)
+    // Procura por qualquer linha que comece com uma palavra alta seguidade de dois pontos
+    // Ex: "VENCIMENTO: 10-05" -> vars['VENCIMENTO'] = '10-05'
+    const lines = analysis.split('\n');
+    lines.forEach(line => {
+      const dynamicMatch = line.match(/^([A-ZÀ-Ú_]+):\s*(.+)$/i);
+      if (dynamicMatch) {
+        const key = dynamicMatch[1].toUpperCase().trim();
+        const value = dynamicMatch[2].trim();
+        vars[key] = value;
+      }
+    });
 
-    // 2. Tentar extrair valor (último número com vírgula ou ponto)
-    const valueMatch = analysis.match(/(\d+[,.]\d{2})$/);
-    if (valueMatch) vars['VALOR'] = valueMatch[1];
+    // 2. Extração Legada/Específica (Fallback/Compatibilidade)
+    // 1. Tentar extrair data (XX-XX) se não houver tag DATA
+    if (!vars['DATA']) {
+      const dateMatch = analysis.match(/(\d{2}-\d{2})/);
+      if (dateMatch) vars['DATA'] = dateMatch[1];
+    }
 
-    // 3. Tentar extrair número de venda (VENDA XXXX)
-    const vendaMatch = analysis.match(/VENDA\s+(\d+)/i);
-    if (vendaMatch) vars['VENDA'] = vendaMatch[1];
+    // 2. Tentar extrair valor se não houver tag VALOR
+    if (!vars['VALOR']) {
+      const valueMatch = analysis.match(/(\d+[,.]\d{2})$/);
+      if (valueMatch) vars['VALOR'] = valueMatch[1];
+    }
+
+    // 3. Tentar extrair número de venda se não houver tag VENDA
+    if (!vars['VENDA']) {
+      const vendaMatch = analysis.match(/VENDA\s+(\d+)/i);
+      if (vendaMatch) vars['VENDA'] = vendaMatch[1];
+    }
 
     // 4. Se for um padrão de nome que sabemos extrair por partes:
     // "XX-XX VENDA 1234 NOME DO CLIENTE 100,00"
     const fullMatch = analysis.match(/(\d{2}-\d{2})\s+VENDA\s+(\d+)\s+(.+?)\s+(\d+[,.]\d{2})/i);
-    if (fullMatch) {
+    if (fullMatch && !vars['NOME']) {
       vars['DATA'] = fullMatch[1];
       vars['VENDA'] = fullMatch[2];
       vars['NOME'] = fullMatch[3].trim();

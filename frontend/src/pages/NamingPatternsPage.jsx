@@ -326,7 +326,7 @@ export default function NamingPatternsPage() {
                                         <TagButton label="NOME" tag="{{NOME}}" onCopy={copyTag} />
                                     </div>
                                     <p className="mt-4 text-[10px] text-dark-500 font-medium leading-relaxed italic border-l-2 border-dark-600 pl-4">
-                                        Dica: Use hífens, espaços e pontos livremente. As tags entre {'{{ }}'} serão substituídas pelos dados extraídos pela IA.
+                                        Dica: O sistema agora suporta tags infinitas! Basta configurar seu prompt para retornar dados no formato <span className="text-brand-blue font-bold">CHAVE: VALOR</span> e usar <span className="text-brand-blue font-bold">{"{{CHAVE}}"}</span> no template.
                                     </p>
                                 </div>
 
