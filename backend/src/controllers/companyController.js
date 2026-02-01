@@ -14,14 +14,20 @@ export const getAllCompanies = async (req, res) => {
     try {
         const { data, error } = await supabase
             .from('companies')
-            .select('*')
+            .select('*, naming_patterns(pattern)')
             .order('name');
 
         if (error) throw error;
 
+        // Achata a estrutura do join para facilitar o uso no frontend
+        const companies = data.map(company => ({
+            ...company,
+            naming_pattern: company.naming_patterns?.pattern || null
+        }));
+
         res.json({
             success: true,
-            data: { companies: data }
+            data: { companies }
         });
     } catch (error) {
         console.error('Erro ao listar empresas:', error);
@@ -34,7 +40,7 @@ export const getAllCompanies = async (req, res) => {
  */
 export const createCompany = async (req, res) => {
     try {
-        const { id, name, icon, financial_receipt_prompt, financial_payment_prompt } = req.body;
+        const { id, name, icon, financial_receipt_prompt, financial_payment_prompt, naming_pattern_id } = req.body;
 
         if (!id || !name) {
             return res.status(400).json({ success: false, error: 'ID e Nome são obrigatórios' });
@@ -47,7 +53,8 @@ export const createCompany = async (req, res) => {
                 name,
                 icon,
                 financial_receipt_prompt,
-                financial_payment_prompt
+                financial_payment_prompt,
+                naming_pattern_id
             }])
             .select()
             .single();

@@ -236,3 +236,53 @@ export async function deleteAdminCompany(id) {
     });
     return await response.json();
 }
+
+/**
+ * Busca todos os padrões de renomeação
+ */
+export async function getNamingPatterns() {
+    const url = `/api/admin/naming-patterns`;
+    const response = await authenticatedFetch(url);
+    return await response.json();
+}
+
+/**
+ * Cria um novo padrão de renomeação
+ */
+export async function createNamingPattern(patternData) {
+    const url = `/api/admin/naming-patterns`;
+    const response = await authenticatedFetch(url, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(patternData)
+    });
+    return await response.json();
+}
+
+/**
+ * Atualiza um padrão de renomeação
+ */
+export async function updateNamingPattern(id, patternData) {
+    const url = `/api/admin/naming-patterns/${id}`;
+    const response = await authenticatedFetch(url, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(patternData)
+    });
+    return await response.json();
+}
+
+/**
+ * Remove um padrão de renomeação
+ */
+export async function deleteNamingPattern(id) {
+    const url = `/api/admin/naming-patterns/${id}`;
+    const response = await authenticatedFetch(url, {
+        method: 'DELETE'
+    });
+    return await response.json();
+}

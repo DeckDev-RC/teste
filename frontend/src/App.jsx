@@ -13,6 +13,7 @@ const DashboardPage = lazy(() => import('./pages/DashboardPage'))
 const UserDashboardPage = lazy(() => import('./pages/UserDashboardPage'))
 const WhatsAppPage = lazy(() => import('./pages/WhatsAppPage'))
 const CompaniesPage = lazy(() => import('./pages/CompaniesPage'))
+const NamingPatternsPage = lazy(() => import('./pages/NamingPatternsPage'))
 const PermissionsPage = lazy(() => import('./pages/PermissionsPage'))
 
 // Componente de loading para Suspense
@@ -210,6 +211,12 @@ function App() {
                         path="/admin/companies"
                         element={
                             isAuthenticated && isMaster ? <CompaniesPage /> : <Navigate to="/" replace />
+                        }
+                    />
+                    <Route
+                        path="/admin/naming-patterns"
+                        element={
+                            isAuthenticated && isMaster ? <NamingPatternsPage /> : <Navigate to="/" replace />
                         }
                     />
                     <Route

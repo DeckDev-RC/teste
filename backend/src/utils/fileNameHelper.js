@@ -38,28 +38,89 @@ export function sanitizeFileName(text, maxLength = 100) {
  * @param {string} analysis - Resposta da análise do Gemini
  * @param {string} analysisType - Tipo de análise realizada
  * @param {string} originalExtension - Extensão original do arquivo
+ * @param {string} pattern - Padrão de renomeação (opcional)
  * @returns {string} - Nome de arquivo gerado
  */
-export function generateFileNameFromAnalysis(analysis, analysisType, originalExtension) {
+export function generateFileNameFromAnalysis(analysis, analysisType, originalExtension, pattern = null) {
   if (!analysis || typeof analysis !== 'string') {
     return `analise_${analysisType}_${Date.now()}${originalExtension}`;
   }
 
   let fileName = '';
 
-  // Para documentos financeiros, tenta extrair informações estruturadas
-  if (analysisType === 'financial-receipt' || analysisType === 'financial-payment') {
-    fileName = generateReceiptFileName(analysis);
-  } else {
-    // Para outros tipos, usa as primeiras palavras da análise
-    fileName = generateGeneralFileName(analysis, analysisType);
+  // Se houver um padrão definido no banco de dados, usamos ele
+  if (pattern) {
+    fileName = applyTemplate(analysis, pattern);
+  }
+
+  // Se não houver padrão ou se falhar, usa a lógica atual
+  if (!fileName) {
+    if (analysisType === 'financial-receipt' || analysisType === 'financial-payment') {
+      fileName = generateReceiptFileName(analysis);
+    } else {
+      fileName = generateGeneralFileName(analysis, analysisType);
+    }
   }
 
   // Sanitiza o nome
-  fileName = sanitizeFileName(fileName, 80); // Deixa espaço para extensão
+  fileName = sanitizeFileName(fileName, 80);
 
-  // Adiciona a extensão
   return `${fileName}${originalExtension}`;
+}
+
+/**
+ * Aplica um template de renomeação usando tags {{}}
+ * @param {string} analysis - Texto da análise
+ * @param {string} template - Template (ex: "{{DATA}} {{VALOR}}")
+ * @returns {string|null} - Nome formatado ou null se falhar
+ */
+function applyTemplate(analysis, template) {
+  try {
+    // Tenta extrair variáveis comuns da string de análise
+    // A string geralmente é: "XX-XX VENDA XXXX NOME XXX,XX" ou similar
+
+    const vars = {};
+
+    // 1. Tentar extrair data (XX-XX)
+    const dateMatch = analysis.match(/(\d{2}-\d{2})/);
+    if (dateMatch) vars['DATA'] = dateMatch[1];
+
+    // 2. Tentar extrair valor (último número com vírgula ou ponto)
+    const valueMatch = analysis.match(/(\d+[,.]\d{2})$/);
+    if (valueMatch) vars['VALOR'] = valueMatch[1];
+
+    // 3. Tentar extrair número de venda (VENDA XXXX)
+    const vendaMatch = analysis.match(/VENDA\s+(\d+)/i);
+    if (vendaMatch) vars['VENDA'] = vendaMatch[1];
+
+    // 4. Se for um padrão de nome que sabemos extrair por partes:
+    // "XX-XX VENDA 1234 NOME DO CLIENTE 100,00"
+    const fullMatch = analysis.match(/(\d{2}-\d{2})\s+VENDA\s+(\d+)\s+(.+?)\s+(\d+[,.]\d{2})/i);
+    if (fullMatch) {
+      vars['DATA'] = fullMatch[1];
+      vars['VENDA'] = fullMatch[2];
+      vars['NOME'] = fullMatch[3].trim();
+      vars['VALOR'] = fullMatch[4];
+    }
+
+    // Substitui cada {{VAR}} pelo valor encontrado
+    let result = template;
+    Object.keys(vars).forEach(key => {
+      const regex = new RegExp(`{{${key}}}`, 'g');
+      result = result.replace(regex, vars[key]);
+    });
+
+    // Se ainda sobrar chaves não preenchidas, tenta limpar ou usar a string original
+    if (result.includes('{{')) {
+      // Se o template falhou em preencher tudo, voltamos para null para usar o fallback
+      return null;
+    }
+
+    return result;
+  } catch (error) {
+    console.error('Erro ao aplicar template:', error);
+    return null;
+  }
 }
 
 /**
@@ -71,7 +132,7 @@ function generateReceiptFileName(analysis) {
   try {
     // Tenta extrair do novo formato: "XX-XX VENDA XXXX NOME XXX,XX"
     const lines = analysis.split('\n').filter(line => line.trim());
-    
+
     for (const line of lines) {
       // Primeiro tenta o novo formato com VENDA
       const newFormatMatch = line.match(/(\d{2}-\d{2})\s+VENDA\s+(\w+)\s+(.+?)\s+(\d+[,.]?\d*)/i);
@@ -79,7 +140,7 @@ function generateReceiptFileName(analysis) {
         const [, date, vendaNumber, name, value] = newFormatMatch;
         return `${date} VENDA ${vendaNumber} ${name.trim()} ${value}`;
       }
-      
+
       // Fallback para o formato antigo: "XX-XX NOME XXX,XX"
       const oldFormatMatch = line.match(/(\d{2}-\d{2})\s+(.+?)\s+(\d+[,.]?\d*)/);
       if (oldFormatMatch) {

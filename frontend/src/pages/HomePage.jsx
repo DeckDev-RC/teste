@@ -295,7 +295,7 @@ export default function HomePage() {
                 return {
                     id: `${batchId}_${index}`,
                     fileName: file.name,
-                    result: data.success ? data.data.analysis : 'ERRO',
+                    result: data.success ? data.data.suggestedFileName || data.data.analysis : 'ERRO',
                     error: data.success ? null : data.error,
                     timestamp: new Date().toISOString(),
                 }
@@ -382,27 +382,33 @@ export default function HomePage() {
                 // Get the extension from original file
                 const ext = result.fileName.split('.').pop() || 'jpg'
 
-                // Create base name from AI result (sanitize for filename)
-                let baseName = result.result
+                // Create base name or use full name from result
+                let finalName = result.result
                     .replace(/[\\/:*?"<>|]/g, '') // Remove invalid chars
                     .replace(/\s+/g, ' ')         // Normalize spaces
                     .trim()
                     .substring(0, 200)            // Limit length
 
+                // If the result doesn't already have the extension, add it
+                if (!finalName.toLowerCase().endsWith('.' + ext.toLowerCase())) {
+                    finalName = `${finalName}.${ext}`
+                }
+
                 // Handle duplicates
-                let finalName = `${baseName}.${ext}`
-                if (usedNames[finalName.toLowerCase()]) {
+                let uniqueName = finalName
+                if (usedNames[uniqueName.toLowerCase()]) {
+                    const baseWithoutExt = finalName.substring(0, finalName.lastIndexOf('.'))
                     let counter = 1
-                    while (usedNames[`${baseName} (${counter}).${ext}`.toLowerCase()]) {
+                    while (usedNames[`${baseWithoutExt} (${counter}).${ext}`.toLowerCase()]) {
                         counter++
                     }
-                    finalName = `${baseName} (${counter}).${ext}`
+                    uniqueName = `${baseWithoutExt} (${counter}).${ext}`
                 }
-                usedNames[finalName.toLowerCase()] = true
+                usedNames[uniqueName.toLowerCase()] = true
 
                 // Add file to ZIP
                 const fileData = await originalFile.arrayBuffer()
-                zip.file(finalName, fileData)
+                zip.file(uniqueName, fileData)
             }
 
             // Generate and download ZIP with company name

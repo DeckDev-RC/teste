@@ -4,7 +4,7 @@ import {
     Plus, Search, Building2, Edit, Trash2,
     ChevronRight, Loader2, ArrowLeft,
     Gem, Zap, Factory, Store, BarChart3, Building, User,
-    FileText, ShieldCheck
+    FileText, ShieldCheck, Tag
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
@@ -113,6 +113,13 @@ export default function CompaniesPage() {
                                 className="bg-dark-800 border border-dark-600 rounded-2xl pl-11 pr-6 py-4 w-64 text-sm focus:border-brand-blue/50 outline-none transition-all placeholder:text-dark-500 font-medium"
                             />
                         </div>
+                        <button
+                            onClick={() => navigate('/admin/naming-patterns')}
+                            className="bg-dark-800 hover:bg-dark-700 text-light-100 p-4 rounded-2xl flex items-center gap-3 border border-dark-600 transition-all font-black uppercase tracking-widest text-[11px] active:scale-95"
+                        >
+                            <Tag className="w-5 h-5 text-brand-blue" />
+                            Padrões de Nome
+                        </button>
                         <button
                             onClick={() => { setSelectedCompany(null); setIsModalOpen(true); }}
                             className="bg-brand-blue hover:bg-brand-blue/90 text-white p-4 rounded-2xl flex items-center gap-3 shadow-lg shadow-brand-blue/20 transition-all font-black uppercase tracking-widest text-[11px] active:scale-95"

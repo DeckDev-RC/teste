@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Check, Building2, Save, Loader2, Info, Gem, Zap, Factory, Store, BarChart3, Building, User } from 'lucide-react';
+import { X, Check, Building2, Save, Loader2, Info, Gem, Zap, Factory, Store, BarChart3, Building, User, Tag } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { createAdminCompany, updateAdminCompany } from '../../utils/dashboardApi';
+import { createAdminCompany, updateAdminCompany, getNamingPatterns } from '../../utils/dashboardApi';
 
 const AVAILABLE_ICONS = [
     { name: 'Predio', id: 'Building2', icon: Building2 },
@@ -21,8 +21,11 @@ export default function CompanyFormModal({ isOpen, onClose, company = null, onSu
         name: '',
         icon: 'Building2',
         financial_receipt_prompt: '',
-        financial_payment_prompt: ''
+        financial_payment_prompt: '',
+        naming_pattern_id: ''
     });
+    const [availablePatterns, setAvailablePatterns] = useState([]);
+    const [loadingPatterns, setLoadingPatterns] = useState(false);
     const [saving, setSaving] = useState(false);
     const isEditing = !!company;
 
@@ -34,7 +37,8 @@ export default function CompanyFormModal({ isOpen, onClose, company = null, onSu
                     name: company.name,
                     icon: company.icon || 'Building2',
                     financial_receipt_prompt: company.financial_receipt_prompt || '',
-                    financial_payment_prompt: company.financial_payment_prompt || ''
+                    financial_payment_prompt: company.financial_payment_prompt || '',
+                    naming_pattern_id: company.naming_pattern_id || ''
                 });
             } else {
                 setFormData({
@@ -42,11 +46,29 @@ export default function CompanyFormModal({ isOpen, onClose, company = null, onSu
                     name: '',
                     icon: 'Building2',
                     financial_receipt_prompt: '',
-                    financial_payment_prompt: ''
+                    financial_payment_prompt: '',
+                    naming_pattern_id: ''
                 });
             }
+
+            // Fetch available patterns
+            fetchPatterns();
         }
     }, [company, isOpen]);
+
+    const fetchPatterns = async () => {
+        setLoadingPatterns(true);
+        try {
+            const result = await getNamingPatterns();
+            if (result.success) {
+                setAvailablePatterns(result.data.patterns);
+            }
+        } catch (error) {
+            console.error('Erro ao buscar padrões:', error);
+        } finally {
+            setLoadingPatterns(false);
+        }
+    };
 
     if (!isOpen) return null;
 
@@ -163,6 +185,24 @@ export default function CompanyFormModal({ isOpen, onClose, company = null, onSu
                                             </button>
                                         ))}
                                     </div>
+                                </div>
+
+                                <div>
+                                    <label className="block text-[10px] font-black text-dark-400 uppercase tracking-widest mb-2 ml-1">Padrão de Renomeação</label>
+                                    <div className="relative">
+                                        <select
+                                            value={formData.naming_pattern_id}
+                                            onChange={(e) => setFormData({ ...formData, naming_pattern_id: e.target.value })}
+                                            className="w-full bg-dark-700 border border-dark-600 rounded-2xl p-4 text-light-100 focus:border-brand-blue/50 outline-none transition-all appearance-none cursor-pointer pr-12"
+                                        >
+                                            <option value="">Padrão Genérico</option>
+                                            {availablePatterns.map(p => (
+                                                <option key={p.id} value={p.id}>{p.name}</option>
+                                            ))}
+                                        </select>
+                                        <Tag className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-dark-400 pointer-events-none" />
+                                    </div>
+                                    {loadingPatterns && <p className="text-[9px] text-brand-blue animate-pulse mt-1 ml-1 font-bold">Carregando padrões...</p>}
                                 </div>
                             </div>
 
