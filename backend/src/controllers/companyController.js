@@ -54,7 +54,7 @@ export const createCompany = async (req, res) => {
                 icon,
                 financial_receipt_prompt,
                 financial_payment_prompt,
-                naming_pattern_id
+                naming_pattern_id: naming_pattern_id || null
             }])
             .select()
             .single();
@@ -78,11 +78,14 @@ export const createCompany = async (req, res) => {
 export const updateCompany = async (req, res) => {
     try {
         const { id } = req.params;
-        const updates = req.body;
+        const upgrades = { ...req.body };
+        if (upgrades.naming_pattern_id === '') {
+            upgrades.naming_pattern_id = null;
+        }
 
         const { data, error } = await supabase
             .from('companies')
-            .update(updates)
+            .update(upgrades)
             .eq('id', id)
             .select()
             .single();
