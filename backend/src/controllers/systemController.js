@@ -43,10 +43,10 @@ export const getStats = async (req, res) => {
 
 export const getCompanies = async (req, res) => {
     try {
-        // Buscar empresas do banco de dados
+        // Buscar empresas do banco de dados (incluindo campos de prompt para validação)
         const { data: companiesFromDb, error } = await supabase
             .from('companies')
-            .select('id, name, icon')
+            .select('id, name, icon, financial_receipt_prompt, financial_payment_prompt')
             .order('name');
 
         if (error) throw error;
@@ -54,7 +54,10 @@ export const getCompanies = async (req, res) => {
         let companiesList = companiesFromDb.map(c => ({
             id: c.id,
             name: c.name,
-            icon: c.icon
+            icon: c.icon,
+            // Flags para indicar se os prompts estão configurados
+            hasReceiptPrompt: !!(c.financial_receipt_prompt && c.financial_receipt_prompt.trim()),
+            hasPaymentPrompt: !!(c.financial_payment_prompt && c.financial_payment_prompt.trim())
         }));
 
         // Filtrar por permissão do usuário
