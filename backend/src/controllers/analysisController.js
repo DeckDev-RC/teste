@@ -77,7 +77,7 @@ export const analyzeFile = async (req, res) => {
         const processingStartTime = Date.now();
 
         // Verifica cache
-        let analysis = analysisStore.getAnalysis(req.file.originalname, fileHash, analysisType);
+        let analysis = analysisStore.getAnalysis(req.file.originalname, fileHash, analysisType, company);
         let isFromCache = !!analysis;
         let analysisPerformed = false;
         let analysisSuccess = true;
@@ -102,17 +102,41 @@ export const analyzeFile = async (req, res) => {
 
             companyData = data;
 
-            if (companyError || !companyData) {
-                console.warn(`Empresa ${company} não encontrada no DB, usando fallback de prompts.js`);
+            if (companyError) {
+                console.error(`❌ Erro ao buscar empresa ${company} no DB:`, companyError.message, companyError.code);
+                console.warn(`⚠️ Usando fallback de prompts.js para ${company}`);
+                const { getPrompt } = await import('../config/prompts.js');
+                prompt = getPrompt(company, analysisType);
+            } else if (!companyData) {
+                console.warn(`⚠️ Empresa ${company} não existe no banco de dados`);
                 const { getPrompt } = await import('../config/prompts.js');
                 prompt = getPrompt(company, analysisType);
             } else {
+                // Busca o prompt correto baseado no tipo de análise
                 prompt = analysisType === 'financial-payment'
                     ? companyData.financial_payment_prompt
                     : companyData.financial_receipt_prompt;
+
+                // Se o prompt selecionado estiver vazio, tenta usar o outro como fallback
+                if (!prompt || prompt.trim() === '') {
+                    const alternativePrompt = analysisType === 'financial-payment'
+                        ? companyData.financial_receipt_prompt
+                        : companyData.financial_payment_prompt;
+
+                    if (alternativePrompt && alternativePrompt.trim() !== '') {
+                        console.warn(`⚠️ Prompt ${analysisType} vazio para ${company}, usando prompt alternativo`);
+                        prompt = alternativePrompt;
+                    } else {
+                        console.warn(`⚠️ Ambos prompts vazios para ${company}, usando fallback de prompts.js`);
+                        const { getPrompt } = await import('../config/prompts.js');
+                        prompt = getPrompt(company, analysisType);
+                    }
+                } else {
+                    console.log(`✅ Prompt do DB para ${company}/${analysisType}: ${prompt.substring(0, 80)}...`);
+                }
             }
         } catch (pError) {
-            console.error('Erro ao buscar prompt no DB:', pError);
+            console.error('❌ Erro crítico ao buscar prompt no DB:', pError);
             // No caso de erro crítico no DB, continuamos com fallback de prompt se possível
             try {
                 const { getPrompt } = await import('../config/prompts.js');
@@ -155,7 +179,7 @@ export const analyzeFile = async (req, res) => {
                     analysis = await aiService.analyzeReceipt(imageData.data, imageData.mimeType, prompt, true, req.file.originalname, null, company, analysisType);
                 }
 
-                analysisStore.storeAnalysis(req.file.originalname, fileHash, analysisType, analysis, batchId);
+                analysisStore.storeAnalysis(req.file.originalname, fileHash, analysisType, analysis, batchId, company);
                 analysisPerformed = true;
                 analysisSuccess = true;
             } catch (analysisError) {

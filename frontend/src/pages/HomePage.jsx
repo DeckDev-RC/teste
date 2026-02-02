@@ -594,10 +594,23 @@ export default function HomePage() {
                                                 const TypeIcon = config.Icon
                                                 const isSelected = analysisType === type
 
+                                                // Check if this analysis type has a prompt for the selected company
+                                                const hasPrompt = type === 'financial-receipt'
+                                                    ? selectedCompany?.hasReceiptPrompt
+                                                    : type === 'financial-payment'
+                                                        ? selectedCompany?.hasPaymentPrompt
+                                                        : true
+                                                const isDisabled = !hasPrompt
+
                                                 // Dynamic styles based on color config
                                                 let borderClass, bgClass, textClass, iconClass
 
-                                                if (config.color === 'emerald') {
+                                                if (isDisabled) {
+                                                    borderClass = 'border-dark-600'
+                                                    bgClass = 'bg-dark-800/50 cursor-not-allowed opacity-50'
+                                                    textClass = 'text-dark-500'
+                                                    iconClass = 'text-dark-500'
+                                                } else if (config.color === 'emerald') {
                                                     borderClass = isSelected ? 'border-emerald-500' : 'border-transparent'
                                                     bgClass = isSelected ? 'bg-emerald-500/10' : 'bg-dark-700 hover:bg-dark-600'
                                                     textClass = isSelected ? 'text-emerald-400' : 'text-light-100'
@@ -617,13 +630,18 @@ export default function HomePage() {
                                                 return (
                                                     <button
                                                         key={type}
-                                                        onClick={() => setAnalysisType(type)}
+                                                        onClick={() => !isDisabled && setAnalysisType(type)}
+                                                        disabled={isDisabled}
+                                                        title={isDisabled ? 'Prompt não configurado para esta empresa' : config.label}
                                                         className={`flex-1 p-4 rounded-xl border-2 transition-all ${borderClass} ${bgClass}`}
                                                     >
                                                         <TypeIcon className={`w-5 h-5 mx-auto mb-1 ${iconClass}`} />
                                                         <p className={`text-xs font-medium text-center ${textClass}`}>
                                                             {config.label}
                                                         </p>
+                                                        {isDisabled && (
+                                                            <p className="text-[8px] text-dark-500 mt-1">Sem prompt</p>
+                                                        )}
                                                     </button>
                                                 )
                                             })}

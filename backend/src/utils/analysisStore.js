@@ -27,10 +27,11 @@ class AnalysisStore {
    * @param {string} fileName - Nome do arquivo original
    * @param {string} fileHash - Hash do conteúdo do arquivo (opcional)
    * @param {string} analysisType - Tipo de análise solicitada
+   * @param {string} company - ID da empresa (para diferenciar prompts)
    * @returns {string} - Chave única
    */
-  generateKey(fileName, fileHash = '', analysisType) {
-    return `${fileName}_${fileHash}_${analysisType}`;
+  generateKey(fileName, fileHash = '', analysisType, company = '') {
+    return `${fileName}_${fileHash}_${analysisType}_${company}`;
   }
 
   /**
@@ -40,12 +41,13 @@ class AnalysisStore {
    * @param {string} analysisType - Tipo de análise solicitada
    * @param {any} result - Resultado da análise
    * @param {string} batchId - ID do lote (opcional)
+   * @param {string} company - ID da empresa (para diferenciar prompts)
    */
-  storeAnalysis(fileName, fileHash, analysisType, result, batchId = null) {
+  storeAnalysis(fileName, fileHash, analysisType, result, batchId = null, company = '') {
     // Executa manutenção periódica
     this.checkMaintenance();
 
-    const key = this.generateKey(fileName, fileHash, analysisType);
+    const key = this.generateKey(fileName, fileHash, analysisType, company);
 
     // Se o store estiver muito cheio, remove a entrada mais antiga (FIFO simplificado)
     if (this.store.size >= this.MAX_STORE_SIZE && !this.store.has(key)) {
@@ -78,10 +80,11 @@ class AnalysisStore {
    * @param {string} fileName - Nome do arquivo original
    * @param {string} fileHash - Hash do conteúdo do arquivo (opcional)
    * @param {string} analysisType - Tipo de análise solicitada
+   * @param {string} company - ID da empresa (para diferenciar prompts)
    * @returns {any|null} - Resultado da análise ou null se não encontrado
    */
-  getAnalysis(fileName, fileHash, analysisType) {
-    const key = this.generateKey(fileName, fileHash, analysisType);
+  getAnalysis(fileName, fileHash, analysisType, company = '') {
+    const key = this.generateKey(fileName, fileHash, analysisType, company);
 
     if (this.store.has(key)) {
       const entry = this.store.get(key);

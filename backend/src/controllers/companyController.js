@@ -41,7 +41,10 @@ export const getAllCompanies = async (req, res) => {
                 naming_patterns: associatedPatterns,
                 // Mantém naming_pattern_id original para compatibilidade temporária se necessário
                 // ou simplesmente o primeiro/principal padrão
-                naming_pattern: associatedPatterns[0]?.pattern || null
+                naming_pattern: associatedPatterns[0]?.pattern || null,
+                // Flags indicando quais prompts estão configurados
+                hasReceiptPrompt: !!(company.financial_receipt_prompt && company.financial_receipt_prompt.trim()),
+                hasPaymentPrompt: !!(company.financial_payment_prompt && company.financial_payment_prompt.trim())
             };
         });
 
