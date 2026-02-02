@@ -11,7 +11,10 @@ import {
     addUserCredits,
     setUserRole,
     setUserCompanies,
-    getAllUsers
+    getAllUsers,
+    createUser,
+    updateUser,
+    deleteUser
 } from '../controllers/adminController.js';
 import {
     getAllCompanies,
@@ -39,6 +42,9 @@ router.post('/users/:userId/credits/reset', express.json(), resetUserCredits); /
 router.post('/users/:userId/credits/add', express.json(), addUserCredits); // Adicionar créditos a um usuário
 router.put('/users/:userId/role', express.json(), setUserRole); // Definir role de um usuário
 router.put('/users/:userId/companies', express.json(), setUserCompanies); // Definir empresas permitidas
+router.post('/users', express.json(), createUser); // Criar novo usuário
+router.patch('/users/:userId', express.json(), updateUser); // Atualizar usuário
+router.delete('/users/:userId', deleteUser); // Deletar usuário
 
 // Gestão de Empresas (Catálogo)
 router.get('/companies', getAllCompanies);

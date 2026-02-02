@@ -350,3 +350,189 @@ export const setUserCompanies = async (req, res) => {
         });
     }
 };
+
+/**
+ * Criar um novo usuário no Supabase Auth e no perfil
+ */
+export const createUser = async (req, res) => {
+    try {
+        const { email, password, fullName, role } = req.body;
+
+        if (!email || !password || !role) {
+            return res.status(400).json({
+                success: false,
+                error: 'Email, senha e role são obrigatórios'
+            });
+        }
+
+        if (!supabaseAdmin) {
+            return res.status(500).json({
+                success: false,
+                error: 'Sistema de administração não configurado'
+            });
+        }
+
+        // 1. Criar usuário no Supabase Auth
+        const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
+            email,
+            password,
+            email_confirm: true,
+            user_metadata: { full_name: fullName }
+        });
+
+        if (authError) throw authError;
+
+        const userId = authData.user.id;
+
+        // 2. Criar perfil na tabela profiles (se já não houver via trigger)
+        const { data: profileData, error: profileError } = await supabaseAdmin
+            .from('profiles')
+            .upsert({
+                id: userId,
+                email,
+                full_name: fullName,
+                role: role,
+                updated_at: new Date().toISOString()
+            })
+            .select()
+            .single();
+
+        if (profileError) {
+            console.error('Erro ao criar perfil após criação de auth:', profileError);
+        }
+
+        // 3. Inicializar créditos para o mês atual
+        try {
+            const currentMonth = new Date().toISOString().slice(0, 7);
+            await supabaseAdmin.from('user_credits').insert({
+                user_id: userId,
+                credits_used: 0,
+                credits_limit: 2500,
+                month_year: currentMonth
+            });
+        } catch (creditError) {
+            console.warn('Erro ao inicializar créditos:', creditError.message);
+        }
+
+        res.status(201).json({
+            success: true,
+            message: 'Usuário criado com sucesso',
+            data: {
+                user: authData.user,
+                profile: profileData
+            }
+        });
+    } catch (error) {
+        console.error('Erro ao criar usuário:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message || 'Erro ao criar usuário'
+        });
+    }
+};
+
+/**
+ * Atualizar e-mail ou senha de um usuário no Supabase Auth
+ */
+export const updateUser = async (req, res) => {
+    try {
+        const { userId } = req.params;
+        const { email, password, fullName, role } = req.body;
+
+        if (!userId) {
+            return res.status(400).json({
+                success: false,
+                error: 'ID do usuário é obrigatório'
+            });
+        }
+
+        if (!supabaseAdmin) {
+            return res.status(500).json({
+                success: false,
+                error: 'Sistema de administração não configurado'
+            });
+        }
+
+        const updateData = {};
+        if (email) updateData.email = email;
+        if (password) updateData.password = password;
+        if (fullName) updateData.user_metadata = { ...updateData.user_metadata, full_name: fullName };
+
+        // 1. Atualizar Supabase Auth (se houver email ou password)
+        if (Object.keys(updateData).length > 0) {
+            const { error: authError } = await supabaseAdmin.auth.admin.updateUserById(
+                userId,
+                updateData
+            );
+            if (authError) throw authError;
+        }
+
+        // 2. Atualizar perfil
+        const profileUpdate = { updated_at: new Date().toISOString() };
+        if (fullName) profileUpdate.full_name = fullName;
+        if (email) profileUpdate.email = email;
+        if (role) profileUpdate.role = role;
+
+        const { data: profile, error: profileError } = await supabaseAdmin
+            .from('profiles')
+            .update(profileUpdate)
+            .eq('id', userId)
+            .select()
+            .single();
+
+        if (profileError) throw profileError;
+
+        res.json({
+            success: true,
+            message: 'Usuário atualizado com sucesso',
+            data: profile
+        });
+    } catch (error) {
+        console.error('Erro ao atualizar usuário:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message || 'Erro ao atualizar usuário'
+        });
+    }
+};
+
+/**
+ * Deletar um usuário
+ */
+export const deleteUser = async (req, res) => {
+    try {
+        const { userId } = req.params;
+
+        if (!userId) {
+            return res.status(400).json({
+                success: false,
+                error: 'ID do usuário é obrigatório'
+            });
+        }
+
+        if (!supabaseAdmin) {
+            return res.status(500).json({
+                success: false,
+                error: 'Sistema de administração não configurado'
+            });
+        }
+
+        // 1. Deletar do Auth
+        const { error: authError } = await supabaseAdmin.auth.admin.deleteUser(userId);
+        if (authError) throw authError;
+
+        // 2. Garantir deleção no profiles
+        await supabaseAdmin.from('profiles').delete().eq('id', userId);
+
+        res.json({
+            success: true,
+            message: 'Usuário removido com sucesso'
+        });
+    } catch (error) {
+        console.error('Erro ao deletar usuário:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message || 'Erro ao deletar usuário'
+        });
+    }
+};

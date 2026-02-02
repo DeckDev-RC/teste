@@ -26,6 +26,7 @@ export default function Header({ title }) {
 
     if (isMaster) {
         navItems.push({ label: 'Empresas', path: '/admin/companies', icon: Building2 });
+        navItems.push({ label: 'Usuários', path: '/admin/users', icon: Users });
         navItems.push({ label: 'Acessos', path: '/admin/permissions', icon: ShieldCheck });
         navItems.push({ label: 'Painel Master', path: '/dashboard', icon: Settings, primary: true });
     }

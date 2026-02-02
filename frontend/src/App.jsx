@@ -34,6 +34,7 @@ const WhatsAppPage = lazyWithRetry(() => import('./pages/WhatsAppPage'))
 const CompaniesPage = lazyWithRetry(() => import('./pages/CompaniesPage'))
 const NamingPatternsPage = lazyWithRetry(() => import('./pages/NamingPatternsPage'))
 const PermissionsPage = lazyWithRetry(() => import('./pages/PermissionsPage'))
+const UsersPage = lazyWithRetry(() => import('./pages/UsersPage'))
 
 // Componente de loading para Suspense
 const PageLoader = () => (
@@ -242,6 +243,12 @@ function App() {
                         path="/admin/permissions"
                         element={
                             isAuthenticated && isMaster ? <PermissionsPage /> : <Navigate to="/" replace />
+                        }
+                    />
+                    <Route
+                        path="/admin/users"
+                        element={
+                            isAuthenticated && isMaster ? <UsersPage /> : <Navigate to="/" replace />
                         }
                     />
                     <Route
