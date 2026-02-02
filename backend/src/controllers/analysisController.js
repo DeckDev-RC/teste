@@ -264,7 +264,7 @@ export const analyzeFile = async (req, res) => {
                     isFromCache: false,
                     processingTimeMs,
                     success: false,
-                    errorMessage: error.message,
+                    errorMessage: errorMessage || 'Erro na análise',
                     creditsDebited: 0
                 });
             } catch (logError) {
@@ -310,7 +310,7 @@ export const analyzeFile = async (req, res) => {
                     isFromCache: false,
                     processingTimeMs,
                     success: false,
-                    errorMessage: error.message,
+                    errorMessage: error && error.message ? error.message : 'Erro desconhecido no controller',
                     creditsDebited: 0
                 });
             } catch (logError) {
