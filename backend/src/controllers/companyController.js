@@ -14,16 +14,36 @@ export const getAllCompanies = async (req, res) => {
     try {
         const { data, error } = await supabase
             .from('companies')
-            .select('*, naming_patterns(pattern)')
+            .select(`
+                *,
+                company_naming_patterns(
+                    priority,
+                    naming_patterns(id, name, pattern)
+                )
+            `)
             .order('name');
 
         if (error) throw error;
 
-        // Achata a estrutura do join para facilitar o uso no frontend
-        const companies = data.map(company => ({
-            ...company,
-            naming_pattern: company.naming_patterns?.pattern || null
-        }));
+        // Achata a estrutura para manter compatibilidade e facilitar uso
+        const companies = data.map(company => {
+            const associatedPatterns = company.company_naming_patterns
+                ?.sort((a, b) => (a.priority || 0) - (b.priority || 0))
+                .map(p => ({
+                    id: p.naming_patterns?.id,
+                    name: p.naming_patterns?.name,
+                    pattern: p.naming_patterns?.pattern,
+                    priority: p.priority
+                })) || [];
+
+            return {
+                ...company,
+                naming_patterns: associatedPatterns,
+                // Mantém naming_pattern_id original para compatibilidade temporária se necessário
+                // ou simplesmente o primeiro/principal padrão
+                naming_pattern: associatedPatterns[0]?.pattern || null
+            };
+        });
 
         res.json({
             success: true,
@@ -40,7 +60,7 @@ export const getAllCompanies = async (req, res) => {
  */
 export const createCompany = async (req, res) => {
     try {
-        const { id, name, icon, financial_receipt_prompt, financial_payment_prompt, naming_pattern_id } = req.body;
+        const { id, name, icon, financial_receipt_prompt, financial_payment_prompt, naming_pattern_ids } = req.body;
 
         if (!id || !name) {
             return res.status(400).json({ success: false, error: 'ID e Nome são obrigatórios' });
@@ -53,13 +73,27 @@ export const createCompany = async (req, res) => {
                 name,
                 icon,
                 financial_receipt_prompt,
-                financial_payment_prompt,
-                naming_pattern_id: naming_pattern_id || null
+                financial_payment_prompt
             }])
             .select()
             .single();
 
         if (error) throw error;
+
+        // Se houver padrões, criar associações
+        if (naming_pattern_ids && Array.isArray(naming_pattern_ids)) {
+            const associations = naming_pattern_ids.map((patternId, index) => ({
+                company_id: id,
+                naming_pattern_id: patternId,
+                priority: index
+            }));
+
+            const { error: assocError } = await supabase
+                .from('company_naming_patterns')
+                .insert(associations);
+
+            if (assocError) console.error('Erro ao associar padrões na criação:', assocError);
+        }
 
         res.status(201).json({
             success: true,
@@ -78,10 +112,7 @@ export const createCompany = async (req, res) => {
 export const updateCompany = async (req, res) => {
     try {
         const { id } = req.params;
-        const upgrades = { ...req.body };
-        if (upgrades.naming_pattern_id === '') {
-            upgrades.naming_pattern_id = null;
-        }
+        const { naming_pattern_ids, ...upgrades } = req.body;
 
         const { data, error } = await supabase
             .from('companies')
@@ -91,6 +122,30 @@ export const updateCompany = async (req, res) => {
             .single();
 
         if (error) throw error;
+
+        // Atualizar associações de padrões se fornecido
+        if (naming_pattern_ids && Array.isArray(naming_pattern_ids)) {
+            // Remove associações antigas
+            await supabase
+                .from('company_naming_patterns')
+                .delete()
+                .eq('company_id', id);
+
+            // Insere novas
+            if (naming_pattern_ids.length > 0) {
+                const associations = naming_pattern_ids.map((patternId, index) => ({
+                    company_id: id,
+                    naming_pattern_id: patternId,
+                    priority: index
+                }));
+
+                const { error: assocError } = await supabase
+                    .from('company_naming_patterns')
+                    .insert(associations);
+
+                if (assocError) throw assocError;
+            }
+        }
 
         res.json({
             success: true,

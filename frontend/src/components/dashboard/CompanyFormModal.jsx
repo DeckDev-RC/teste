@@ -22,7 +22,7 @@ export default function CompanyFormModal({ isOpen, onClose, company = null, onSu
         icon: 'Building2',
         financial_receipt_prompt: '',
         financial_payment_prompt: '',
-        naming_pattern_id: ''
+        naming_pattern_ids: []
     });
     const [availablePatterns, setAvailablePatterns] = useState([]);
     const [loadingPatterns, setLoadingPatterns] = useState(false);
@@ -38,7 +38,7 @@ export default function CompanyFormModal({ isOpen, onClose, company = null, onSu
                     icon: company.icon || 'Building2',
                     financial_receipt_prompt: company.financial_receipt_prompt || '',
                     financial_payment_prompt: company.financial_payment_prompt || '',
-                    naming_pattern_id: company.naming_pattern_id || ''
+                    naming_pattern_ids: company.naming_patterns?.map(p => p.id) || []
                 });
             } else {
                 setFormData({
@@ -47,7 +47,7 @@ export default function CompanyFormModal({ isOpen, onClose, company = null, onSu
                     icon: 'Building2',
                     financial_receipt_prompt: '',
                     financial_payment_prompt: '',
-                    naming_pattern_id: ''
+                    naming_pattern_ids: []
                 });
             }
 
@@ -188,21 +188,69 @@ export default function CompanyFormModal({ isOpen, onClose, company = null, onSu
                                 </div>
 
                                 <div>
-                                    <label className="block text-[10px] font-black text-dark-400 uppercase tracking-widest mb-2 ml-1">Padrão de Renomeação</label>
-                                    <div className="relative">
-                                        <select
-                                            value={formData.naming_pattern_id}
-                                            onChange={(e) => setFormData({ ...formData, naming_pattern_id: e.target.value })}
-                                            className="w-full bg-dark-700 border border-dark-600 rounded-2xl p-4 text-light-100 focus:border-brand-blue/50 outline-none transition-all appearance-none cursor-pointer pr-12"
-                                        >
-                                            <option value="">Padrão Genérico</option>
-                                            {availablePatterns.map(p => (
-                                                <option key={p.id} value={p.id}>{p.name}</option>
-                                            ))}
-                                        </select>
-                                        <Tag className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-dark-400 pointer-events-none" />
+                                    <label className="block text-[10px] font-black text-dark-400 uppercase tracking-widest mb-2 ml-1">Padrões de Renomeação (Ordem de Prioridade)</label>
+                                    <div className="space-y-3">
+                                        {/* Lista de Padrões Selecionados */}
+                                        <div className="space-y-2">
+                                            {formData.naming_pattern_ids.map((id, index) => {
+                                                const pattern = availablePatterns.find(p => p.id === id);
+                                                if (!pattern) return null;
+                                                return (
+                                                    <div key={id} className="flex items-center gap-2 bg-dark-700 border border-dark-600 rounded-xl p-3 group">
+                                                        <div className="w-6 h-6 bg-dark-600 rounded-lg flex items-center justify-center text-[10px] font-black text-dark-400">
+                                                            {index + 1}
+                                                        </div>
+                                                        <div className="flex-1">
+                                                            <p className="text-[11px] font-bold text-light-100">{pattern.name}</p>
+                                                            <p className="text-[9px] text-dark-400 font-mono truncate">{pattern.pattern}</p>
+                                                        </div>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => {
+                                                                const newIds = [...formData.naming_pattern_ids];
+                                                                newIds.splice(index, 1);
+                                                                setFormData({ ...formData, naming_pattern_ids: newIds });
+                                                            }}
+                                                            className="p-1 opacity-0 group-hover:opacity-100 hover:bg-dark-500 rounded-md text-dark-400 hover:text-red-400 transition-all"
+                                                        >
+                                                            <X className="w-4 h-4" />
+                                                        </button>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+
+                                        {/* Seletor para adicionar */}
+                                        <div className="relative">
+                                            <select
+                                                value=""
+                                                onChange={(e) => {
+                                                    const id = e.target.value;
+                                                    if (id && !formData.naming_pattern_ids.includes(id)) {
+                                                        setFormData({
+                                                            ...formData,
+                                                            naming_pattern_ids: [...formData.naming_pattern_ids, id]
+                                                        });
+                                                    }
+                                                }}
+                                                className="w-full bg-dark-800 border-2 border-dashed border-dark-600 rounded-2xl p-4 text-dark-400 text-xs font-bold focus:border-brand-blue/50 outline-none transition-all appearance-none cursor-pointer pr-12 hover:bg-dark-700"
+                                            >
+                                                <option value="" disabled>+ Adicionar Padrão à Empresa</option>
+                                                {availablePatterns
+                                                    .filter(p => !formData.naming_pattern_ids.includes(p.id))
+                                                    .map(p => (
+                                                        <option key={p.id} value={p.id}>{p.name}</option>
+                                                    ))
+                                                }
+                                            </select>
+                                            <Tag className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-dark-400 pointer-events-none" />
+                                        </div>
+
+                                        {formData.naming_pattern_ids.length === 0 && (
+                                            <p className="text-[9px] text-dark-500 italic ml-1">* Se nenhum for selecionado, usará a lógica legada/genérica.</p>
+                                        )}
+                                        {loadingPatterns && <p className="text-[9px] text-brand-blue animate-pulse mt-1 ml-1 font-bold">Carregando padrões...</p>}
                                     </div>
-                                    {loadingPatterns && <p className="text-[9px] text-brand-blue animate-pulse mt-1 ml-1 font-bold">Carregando padrões...</p>}
                                 </div>
                             </div>
 

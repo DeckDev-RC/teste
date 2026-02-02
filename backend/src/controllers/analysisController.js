@@ -89,7 +89,14 @@ export const analyzeFile = async (req, res) => {
         try {
             const { data, error: companyError } = await supabase
                 .from('companies')
-                .select('financial_receipt_prompt, financial_payment_prompt, naming_patterns(pattern)')
+                .select(`
+                    financial_receipt_prompt, 
+                    financial_payment_prompt, 
+                    company_naming_patterns(
+                        priority,
+                        naming_patterns(pattern)
+                    )
+                `)
                 .eq('id', company)
                 .single();
 
@@ -279,9 +286,17 @@ export const analyzeFile = async (req, res) => {
         }
 
         // Gerar nome sugerido usando o sistema de templates
-        const pattern = companyData?.naming_patterns?.pattern || null;
+        // Extrair padrões da estrutura de join table e ordenar por prioridade
+        let patterns = null;
+        if (companyData?.company_naming_patterns) {
+            patterns = companyData.company_naming_patterns
+                .sort((a, b) => (a.priority || 0) - (b.priority || 0))
+                .map(p => p.naming_patterns?.pattern)
+                .filter(Boolean);
+        }
+
         const originalExtension = path.extname(req.file.originalname);
-        const suggestedFileName = fileNameHelper.generateFileNameFromAnalysis(analysis, analysisType, originalExtension, pattern);
+        const suggestedFileName = fileNameHelper.generateFileNameFromAnalysis(analysis, analysisType, originalExtension, patterns);
 
         res.json({
             success: true,

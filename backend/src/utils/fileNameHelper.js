@@ -38,22 +38,30 @@ export function sanitizeFileName(text, maxLength = 100) {
  * @param {string} analysis - Resposta da análise do Gemini
  * @param {string} analysisType - Tipo de análise realizada
  * @param {string} originalExtension - Extensão original do arquivo
- * @param {string} pattern - Padrão de renomeação (opcional)
+ * @param {string|string[]} patterns - Padrão ou array de padrões de renomeação (opcional)
  * @returns {string} - Nome de arquivo gerado
  */
-export function generateFileNameFromAnalysis(analysis, analysisType, originalExtension, pattern = null) {
+export function generateFileNameFromAnalysis(analysis, analysisType, originalExtension, patterns = null) {
   if (!analysis || typeof analysis !== 'string') {
     return `analise_${analysisType}_${Date.now()}${originalExtension}`;
   }
 
   let fileName = '';
 
-  // Se houver um padrão definido no banco de dados, usamos ele
-  if (pattern) {
-    fileName = applyTemplate(analysis, pattern);
+  // Se houver padrões definidos, tentamos eles em ordem
+  if (patterns) {
+    const patternList = Array.isArray(patterns) ? patterns : [patterns];
+    
+    for (const pattern of patternList) {
+      const result = applyTemplate(analysis, pattern);
+      if (result) {
+        fileName = result;
+        break; // Para no primeiro sucesso
+      }
+    }
   }
 
-  // Se não houver padrão ou se falhar, usa a lógica atual
+  // Se não houver padrão ou se falhar em todos, usa a lógica atual
   if (!fileName) {
     if (analysisType === 'financial-receipt' || analysisType === 'financial-payment') {
       fileName = generateReceiptFileName(analysis);
