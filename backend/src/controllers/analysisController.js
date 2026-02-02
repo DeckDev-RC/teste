@@ -107,12 +107,15 @@ export const analyzeFile = async (req, res) => {
 
             // Buscar prompt da empresa no banco de dados
             let prompt;
+            let companyData = null;
             try {
-                const { data: companyData, error: companyError } = await supabase
+                const { data, error: companyError } = await supabase
                     .from('companies')
                     .select('financial_receipt_prompt, financial_payment_prompt, naming_patterns(pattern)')
                     .eq('id', company)
                     .single();
+
+                companyData = data;
 
                 if (companyError || !companyData) {
                     console.warn(`Empresa ${company} não encontrada no DB, usando fallback de prompts.js`);
