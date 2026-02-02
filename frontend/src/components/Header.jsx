@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     LogOut, LayoutDashboard, MessageSquare, Home,
-    ChevronRight, Settings, Menu, X, Building2, ShieldCheck
+    ChevronRight, Settings, Menu, X, Building2, ShieldCheck, Users
 } from 'lucide-react';
 import { AuthContext } from '../App';
 
