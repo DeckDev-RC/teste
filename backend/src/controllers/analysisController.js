@@ -274,7 +274,7 @@ export const analyzeFile = async (req, res) => {
             if (req.file) try { await fs.unlink(req.file.path); } catch (e) { }
             return res.status(500).json({
                 success: false,
-                error: error.message || 'Erro ao processar análise'
+                error: errorMessage || 'Erro ao processar análise'
             });
         }
 
