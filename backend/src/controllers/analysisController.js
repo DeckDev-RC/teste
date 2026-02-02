@@ -8,7 +8,7 @@ import fileNameHelper from '../utils/fileNameHelper.js';
 import { getAvailableAnalysisTypes } from '../config/prompts.js';
 import { createClient } from '@supabase/supabase-js';
 
-const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY);
+const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY);
 import usageService from '../services/usageService.js';
 import creditsService from '../services/creditsService.js';
 import analysisLogService from '../services/analysisLogService.js';
