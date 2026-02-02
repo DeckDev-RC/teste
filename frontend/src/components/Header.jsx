@@ -61,7 +61,7 @@ export default function Header({ title }) {
                     </div>
 
                     {/* Desktop Navigation */}
-                    <nav className="hidden lg:flex items-center bg-dark-900/50 p-1 rounded-2xl border border-dark-600">
+                    <nav className="hidden lg:flex items-center gap-1">
                         {navItems.map((item) => {
                             const isActive = location.pathname === item.path;
                             const Icon = item.icon;
@@ -71,16 +71,16 @@ export default function Header({ title }) {
                                     key={item.path}
                                     onClick={() => navigate(item.path)}
                                     className={`
-                                        flex items-center gap-2 px-4 py-2 rounded-xl text-[11px] font-black uppercase tracking-wider transition-all
+                                        flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-[0.15em] transition-all
                                         ${isActive
                                             ? item.primary
                                                 ? 'bg-brand-blue text-white shadow-[0_4px_12px_rgba(43,153,255,0.3)]'
-                                                : 'bg-dark-700 text-light-100 border border-dark-600'
-                                            : 'text-dark-400 hover:text-light-200 hover:bg-dark-800/50'
+                                                : 'bg-light-100/10 text-light-100 border border-light-100/10 backdrop-blur-sm'
+                                            : 'text-dark-400 hover:text-light-100 hover:bg-light-100/5'
                                         }
                                     `}
                                 >
-                                    <Icon className={`w-3.5 h-3.5 ${isActive && !item.primary ? 'text-brand-blue' : ''}`} />
+                                    <Icon className={`w-3 h-3 ${isActive && !item.primary ? 'text-brand-blue' : ''}`} />
                                     {item.label}
                                 </button>
                             );
