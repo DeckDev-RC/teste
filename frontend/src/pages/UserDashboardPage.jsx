@@ -61,7 +61,8 @@ export default function UserDashboardPage() {
             description: 'Monitorar grupos e mensagens',
             icon: MessageSquare,
             color: 'emerald',
-            action: () => navigate('/whatsapp')
+            action: () => navigate('/whatsapp'),
+            hidden: !isMaster
         },
         {
             title: 'Google Drive',
@@ -77,7 +78,7 @@ export default function UserDashboardPage() {
             color: 'purple',
             action: () => navigate('/history')
         }
-    ];
+    ].filter(a => !a.hidden);
 
     if (loading && !stats) {
         return (
@@ -219,7 +220,7 @@ export default function UserDashboardPage() {
                                     <p className="text-dark-300 text-sm mb-6 leading-relaxed">
                                         Fale com nosso time para planos personalizados e processamento massivo via API direta.
                                     </p>
-                                    <button className="px-6 py-3 bg-white text-dark-900 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-brand-blue hover:text-white transition-all shadow-xl shadow-black/20 text-dark-900 font-bold">
+                                    <button className="px-6 py-3 bg-white text-dark-900 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-brand-blue hover:text-white transition-all shadow-xl shadow-black/20">
                                         Contatar Vendas
                                     </button>
                                 </div>
@@ -304,7 +305,7 @@ export default function UserDashboardPage() {
 
                                         <button
                                             onClick={() => navigate('/history')}
-                                            className="w-full py-5 bg-dark-900/30 hover:bg-dark-700/50 text-dark-500 hover:text-light-100 text-[10px] font-black uppercase tracking-[0.3em] transition-all border-t border-dark-700/30 font-bold"
+                                            className="w-full py-5 bg-dark-900/30 hover:bg-dark-700/50 text-dark-500 hover:text-light-100 text-[10px] font-black uppercase tracking-[0.3em] transition-all border-t border-dark-700/30"
                                         >
                                             Base de Conhecimento Completa
                                         </button>

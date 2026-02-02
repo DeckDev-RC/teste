@@ -21,10 +21,10 @@ export default function Header({ title }) {
     const navItems = [
         { label: 'Início', path: '/', icon: Home },
         { label: 'Dashboard Usuário', path: '/user-dashboard', icon: LayoutDashboard },
-        { label: 'WhatsApp', path: '/whatsapp', icon: MessageSquare },
     ];
 
     if (isMaster) {
+        navItems.push({ label: 'WhatsApp', path: '/whatsapp', icon: MessageSquare });
         navItems.push({ label: 'Empresas', path: '/admin/companies', icon: Building2 });
         navItems.push({ label: 'Usuários', path: '/admin/users', icon: Users });
         navItems.push({ label: 'Acessos', path: '/admin/permissions', icon: ShieldCheck });

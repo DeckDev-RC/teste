@@ -41,8 +41,8 @@ const CompanyCard = memo(({ company, isSelected, onSelect }) => {
 
 const PROVIDER_HINTS = {
     'gemini': { label: 'Melhor Visão', color: 'blue', recommended: true },
-    'openai': { label: 'Melhor Lógica', color: 'purple' },
-    'nexus': { label: 'Versátil', color: 'emerald' },
+    'openai': { label: 'Em Manutenção', color: 'amber', maintenance: true },
+    'nexus': { label: 'Em Manutenção', color: 'amber', maintenance: true },
     'default': { label: 'IA', color: 'gray' }
 }
 
@@ -50,28 +50,32 @@ const ProviderButton = memo(({ provider, isSelected, onSelect }) => {
     const Icon = provider.Icon
     const hint = PROVIDER_HINTS[provider.id] || PROVIDER_HINTS['default']
     const isRecommended = hint.recommended
+    const isMaintenance = hint.maintenance
 
     return (
         <motion.button
-            whileHover={{ scale: 1.05, y: -2 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => onSelect(provider)}
+            whileHover={!isMaintenance ? { scale: 1.05, y: -2 } : {}}
+            whileTap={!isMaintenance ? { scale: 0.95 } : {}}
+            onClick={() => !isMaintenance && onSelect(provider)}
+            disabled={isMaintenance}
             className={`relative flex-1 p-5 pt-7 rounded-2xl border-2 transition-all overflow-hidden ${isSelected
                 ? 'border-brand-blue bg-brand-blue/10 shadow-[0_8px_20px_rgba(43,153,255,0.15)]'
                 : isRecommended
                     ? 'border-brand-blue/30 bg-dark-700/50 shadow-[0_0_15px_rgba(43,153,255,0.1)]'
-                    : 'border-transparent bg-dark-700/50 hover:bg-dark-600/50'
+                    : isMaintenance
+                        ? 'border-amber-500/30 bg-dark-700/30 grayscale-[0.5] cursor-not-allowed'
+                        : 'border-transparent bg-dark-700/50 hover:bg-dark-600/50'
                 }`}
         >
             {/* Specialty Badge */}
-            <div className={`absolute top-0 right-0 left-0 py-1 text-[7px] font-black uppercase tracking-widest text-center ${isSelected ? 'bg-brand-blue text-white' : isRecommended ? 'bg-brand-blue/80 text-white' : 'bg-dark-600 text-dark-400'
+            <div className={`absolute top-0 right-0 left-0 py-1 text-[7px] font-black uppercase tracking-widest text-center ${isSelected ? 'bg-brand-blue text-white' : isRecommended ? 'bg-brand-blue/80 text-white' : isMaintenance ? 'bg-amber-500 text-dark-900' : 'bg-dark-600 text-dark-400'
                 }`}>
-                {isRecommended ? '⭐ Recomendado' : hint.label}
+                {isMaintenance ? '⚠️ Manutenção' : isRecommended ? '⭐ Recomendado' : hint.label}
             </div>
 
-            <Icon className={`w-7 h-7 mx-auto mb-2 transition-colors ${isSelected ? 'text-brand-blue' : isRecommended ? 'text-brand-blue/70' : 'text-dark-500'}`} />
+            <Icon className={`w-7 h-7 mx-auto mb-2 transition-colors ${isSelected ? 'text-brand-blue' : isRecommended ? 'text-brand-blue/70' : isMaintenance ? 'text-amber-500/50' : 'text-dark-500'}`} />
             <div className="flex items-center justify-center gap-1">
-                <p className={`text-xs font-bold text-center tracking-tight ${isSelected ? 'text-brand-blue' : 'text-light-100'}`}>
+                <p className={`text-xs font-bold text-center tracking-tight ${isSelected ? 'text-brand-blue' : isMaintenance ? 'text-dark-400' : 'text-light-100'}`}>
                     {provider.name}
                 </p>
                 {isRecommended && <Star className="w-2.5 h-2.5 text-brand-blue fill-brand-blue" />}
@@ -234,8 +238,17 @@ export default function HomePage() {
     useEffect(() => {
         refreshSystemData()
 
-        const saved = localStorage.getItem('analysisHistory')
-        if (saved) setHistory(JSON.parse(saved))
+        if (user?.id) {
+            const historyKey = `analysisHistory_${user.id}`
+            const saved = localStorage.getItem(historyKey)
+            if (saved) {
+                setHistory(JSON.parse(saved))
+            } else {
+                setHistory([])
+            }
+        } else {
+            setHistory([])
+        }
     }, [user]) // Recarregar quando o usuário mudar
 
     const handleLogout = async () => {
@@ -330,7 +343,11 @@ export default function HomePage() {
         const successResults = completedResults.filter(r => !r.error)
         const newHistory = [...successResults, ...history].slice(0, 100)
         setHistory(newHistory)
-        localStorage.setItem('analysisHistory', JSON.stringify(newHistory))
+
+        if (user?.id) {
+            const historyKey = `analysisHistory_${user.id}`
+            localStorage.setItem(historyKey, JSON.stringify(newHistory))
+        }
 
         const successCount = successResults.length
         successCount === files.length
@@ -848,7 +865,12 @@ export default function HomePage() {
                                     </div>
                                     {history.length > 0 && (
                                         <button
-                                            onClick={() => { setHistory([]); localStorage.removeItem('analysisHistory'); toast.success('Histórico limpo!') }}
+                                            onClick={() => {
+                                                setHistory([]);
+                                                const historyKey = `analysisHistory_${user?.id}`;
+                                                localStorage.removeItem(historyKey);
+                                                toast.success('Histórico limpo!')
+                                            }}
                                             className="text-xs text-red-400 hover:text-red-300 flex items-center gap-1 transition-colors"
                                         >
                                             <Trash2 className="w-3 h-3" />

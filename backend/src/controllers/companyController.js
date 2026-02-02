@@ -12,7 +12,10 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey);
  */
 export const getAllCompanies = async (req, res) => {
     try {
-        const { data, error } = await supabase
+        const isAdmin = req.user?.role === 'master' || req.user?.role === 'admin';
+        const allowed = req.user?.allowed_companies;
+
+        let query = supabase
             .from('companies')
             .select(`
                 *,
@@ -20,8 +23,14 @@ export const getAllCompanies = async (req, res) => {
                     priority,
                     naming_patterns(id, name, pattern)
                 )
-            `)
-            .order('name');
+            `);
+
+        // SE não for admin e tiver lista de permitidas, filtra
+        if (!isAdmin && allowed && Array.isArray(allowed)) {
+            query = query.in('id', allowed);
+        }
+
+        const { data, error } = await query.order('name');
 
         if (error) throw error;
 
