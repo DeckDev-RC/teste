@@ -7,14 +7,33 @@ import RecoveryPage from './pages/RecoveryPage'
 import toast, { Toaster } from 'react-hot-toast'
 import { authenticatedFetch } from './utils/api'
 
+// Função utilitária para lidar com erros de carregamento de chunks (comum após deploys)
+const lazyWithRetry = (componentImport) => {
+    return lazy(async () => {
+        try {
+            return await componentImport();
+        } catch (error) {
+            console.error("Erro ao carregar componente dinâmico. Recarregando página...", error);
+            // Salva no sessionStorage que tentamos recarregar para evitar loop infinito
+            const hasReloaded = sessionStorage.getItem('chunk-reload');
+            if (!hasReloaded) {
+                sessionStorage.setItem('chunk-reload', 'true');
+                window.location.reload();
+                return { default: () => null };
+            }
+            throw error;
+        }
+    });
+};
+
 // Lazy load de páginas menos frequentes para reduzir bundle inicial
-const RegisterPage = lazy(() => import('./pages/RegisterPage'))
-const DashboardPage = lazy(() => import('./pages/DashboardPage'))
-const UserDashboardPage = lazy(() => import('./pages/UserDashboardPage'))
-const WhatsAppPage = lazy(() => import('./pages/WhatsAppPage'))
-const CompaniesPage = lazy(() => import('./pages/CompaniesPage'))
-const NamingPatternsPage = lazy(() => import('./pages/NamingPatternsPage'))
-const PermissionsPage = lazy(() => import('./pages/PermissionsPage'))
+const RegisterPage = lazyWithRetry(() => import('./pages/RegisterPage'))
+const DashboardPage = lazyWithRetry(() => import('./pages/DashboardPage'))
+const UserDashboardPage = lazyWithRetry(() => import('./pages/UserDashboardPage'))
+const WhatsAppPage = lazyWithRetry(() => import('./pages/WhatsAppPage'))
+const CompaniesPage = lazyWithRetry(() => import('./pages/CompaniesPage'))
+const NamingPatternsPage = lazyWithRetry(() => import('./pages/NamingPatternsPage'))
+const PermissionsPage = lazyWithRetry(() => import('./pages/PermissionsPage'))
 
 // Componente de loading para Suspense
 const PageLoader = () => (
