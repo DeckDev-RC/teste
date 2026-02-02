@@ -83,6 +83,38 @@ export const analyzeFile = async (req, res) => {
         let analysisSuccess = true;
         let errorMessage = null;
 
+        // Buscar dados da empresa (prompt e padrão de renomeação)
+        let companyData = null;
+        let prompt;
+        try {
+            const { data, error: companyError } = await supabase
+                .from('companies')
+                .select('financial_receipt_prompt, financial_payment_prompt, naming_patterns(pattern)')
+                .eq('id', company)
+                .single();
+
+            companyData = data;
+
+            if (companyError || !companyData) {
+                console.warn(`Empresa ${company} não encontrada no DB, usando fallback de prompts.js`);
+                const { getPrompt } = await import('../config/prompts.js');
+                prompt = getPrompt(company, analysisType);
+            } else {
+                prompt = analysisType === 'financial-payment'
+                    ? companyData.financial_payment_prompt
+                    : companyData.financial_receipt_prompt;
+            }
+        } catch (pError) {
+            console.error('Erro ao buscar prompt no DB:', pError);
+            // No caso de erro crítico no DB, continuamos com fallback de prompt se possível
+            try {
+                const { getPrompt } = await import('../config/prompts.js');
+                prompt = getPrompt(company, analysisType);
+            } catch (e) {
+                return res.status(500).json({ success: false, error: 'Erro ao configurar prompt de análise' });
+            }
+        }
+
         if (!analysis) {
             // SEGURANÇA: Verificar créditos novamente antes de fazer análise (race condition)
             try {
@@ -105,32 +137,6 @@ export const analyzeFile = async (req, res) => {
 
             const aiService = AIServiceFactory.getService(selectedProvider);
 
-            // Buscar prompt da empresa no banco de dados
-            let prompt;
-            let companyData = null;
-            try {
-                const { data, error: companyError } = await supabase
-                    .from('companies')
-                    .select('financial_receipt_prompt, financial_payment_prompt, naming_patterns(pattern)')
-                    .eq('id', company)
-                    .single();
-
-                companyData = data;
-
-                if (companyError || !companyData) {
-                    console.warn(`Empresa ${company} não encontrada no DB, usando fallback de prompts.js`);
-                    // Fallback para o comportamento antigo se não achar no DB (opcional, melhor erro)
-                    const { getPrompt } = await import('../config/prompts.js');
-                    prompt = getPrompt(company, analysisType);
-                } else {
-                    prompt = analysisType === 'financial-payment'
-                        ? companyData.financial_payment_prompt
-                        : companyData.financial_receipt_prompt;
-                }
-            } catch (pError) {
-                console.error('Erro ao buscar prompt no DB:', pError);
-                return res.status(500).json({ success: false, error: 'Erro ao configurar prompt de análise' });
-            }
 
             const isPDF = req.file.mimetype === 'application/pdf';
 
