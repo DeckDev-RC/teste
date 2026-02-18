@@ -210,6 +210,18 @@ export const analyzeFile = async (req, res) => {
         // Calcular tempo de processamento
         const processingTimeMs = Date.now() - processingStartTime;
 
+        // Gerar nome sugerido usando o sistema de templates (necessário para persistência)
+        let patterns = null;
+        if (companyData?.company_naming_patterns) {
+            patterns = companyData.company_naming_patterns
+                .sort((a, b) => (a.priority || 0) - (b.priority || 0))
+                .map(p => p.naming_patterns?.pattern)
+                .filter(Boolean);
+        }
+
+        const originalExtension = path.extname(req.file.originalname);
+        const suggestedFileName = fileNameHelper.generateFileNameFromAnalysis(analysis, analysisType, originalExtension, patterns);
+
         // Debitar crédito do usuário (após análise bem-sucedida)
         // SEGURANÇA: Se análise foi do cache, não debita novamente (já foi debitado antes)
         // Se análise foi nova, DEVE debitar obrigatoriamente
@@ -278,8 +290,33 @@ export const analyzeFile = async (req, res) => {
             console.warn('⚠️ Erro ao persistir log de análise (não crítico):', logError);
         }
 
-        // Cleanup
-        try { await fs.unlink(filePath); } catch (e) { console.warn('Erro ao remover temporário:', e.message); }
+        // Persistir resultado para exportação ZIP
+        // Importante: NÃO remover o arquivo se a análise foi bem sucedida para permitir exportação futura
+        const protocol = req.protocol;
+        const host = req.get('host');
+        const localFileUrl = `${protocol}://${host}/uploads/${path.basename(filePath)}`;
+
+        try {
+            const { error: dbError } = await supabase
+                .from('analysis_results')
+                .insert({
+                    user_id: userId,
+                    company_id: company,
+                    file_name: req.file.originalname,
+                    file_type: req.file.mimetype,
+                    analysis_json: typeof analysis === 'string' ? { text: analysis } : analysis,
+                    status: 'completed',
+                    original_file_url: localFileUrl,
+                    suggested_file_name: suggestedFileName
+                });
+
+            if (dbError) throw dbError;
+            console.log(`✅ Resultado persistido no analysis_results para: ${req.file.originalname}`);
+        } catch (dbError) {
+            console.error('❌ Erro crítico ao persistir no analysis_results:', dbError);
+            // Tentamos continuar a resposta mesmo com falha na persistência de exportação, 
+            // mas logamos o erro para auditoria.
+        }
 
         // Se houve erro na análise, retornar erro
         if (!analysisSuccess) {
@@ -309,18 +346,6 @@ export const analyzeFile = async (req, res) => {
             });
         }
 
-        // Gerar nome sugerido usando o sistema de templates
-        // Extrair padrões da estrutura de join table e ordenar por prioridade
-        let patterns = null;
-        if (companyData?.company_naming_patterns) {
-            patterns = companyData.company_naming_patterns
-                .sort((a, b) => (a.priority || 0) - (b.priority || 0))
-                .map(p => p.naming_patterns?.pattern)
-                .filter(Boolean);
-        }
-
-        const originalExtension = path.extname(req.file.originalname);
-        const suggestedFileName = fileNameHelper.generateFileNameFromAnalysis(analysis, analysisType, originalExtension, patterns);
 
         res.json({
             success: true,
@@ -389,5 +414,77 @@ export const downloadRenamed = async (req, res) => {
         console.error('Erro no download renomeado:', error);
         if (req.file) try { await fs.unlink(req.file.path); } catch (e) { }
         res.status(500).json({ success: false, error: error.message });
+    }
+};
+
+/**
+ * GET /api/analysis/pending-export - Busca análises não exportadas
+ */
+export const getPendingExport = async (req, res) => {
+    try {
+        const userId = req.user?.id;
+        if (!userId) {
+            return res.status(401).json({ success: false, error: 'Não autenticado' });
+        }
+
+        const { data: pending, error } = await supabase
+            .from('analysis_results')
+            .select(`
+                id, 
+                file_name, 
+                file_type, 
+                suggested_file_name, 
+                original_file_url,
+                created_at,
+                companies (
+                    id,
+                    name
+                )
+            `)
+            .eq('user_id', userId)
+            .eq('status', 'completed')
+            .is('exported_at', null)
+            .order('created_at', { ascending: false });
+
+        if (error) throw error;
+
+        res.json({
+            success: true,
+            data: pending || []
+        });
+    } catch (error) {
+        console.error('❌ Erro ao buscar pendentes de exportação:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Erro ao buscar pendentes',
+            details: error.message || error
+        });
+    }
+};
+
+/**
+ * POST /api/analysis/mark-exported - Marca registros como exportados
+ */
+export const markAsExported = async (req, res) => {
+    try {
+        const userId = req.user?.id;
+        const { ids } = req.body;
+
+        if (!userId || !Array.isArray(ids) || ids.length === 0) {
+            return res.status(400).json({ success: false, error: 'Dados inválidos' });
+        }
+
+        const { error } = await supabase
+            .from('analysis_results')
+            .update({ exported_at: new Date().toISOString() })
+            .eq('user_id', userId)
+            .in('id', ids);
+
+        if (error) throw error;
+
+        res.json({ success: true, message: `${ids.length} itens marcados como exportados` });
+    } catch (error) {
+        console.error('Erro ao marcar como exportado:', error);
+        res.status(500).json({ success: false, error: 'Erro ao atualizar status' });
     }
 };

@@ -3,7 +3,7 @@
  */
 import { Router } from 'express';
 import { authenticate } from '../middleware/auth.js';
-import { getUserStats, getUserAnalyses, getUserCredits } from '../controllers/userDashboardController.js';
+import { getUserStats, getUserAnalyses, getUserCredits, getAnalysisById } from '../controllers/userDashboardController.js';
 
 const router = Router();
 
@@ -18,5 +18,8 @@ router.get('/analyses', getUserAnalyses);
 
 // Créditos restantes
 router.get('/credits', getUserCredits);
+
+// Detalhes de uma análise específica
+router.get('/analyses/:id', getAnalysisById);
 
 export default router;
