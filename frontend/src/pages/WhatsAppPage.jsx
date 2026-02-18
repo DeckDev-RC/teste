@@ -11,6 +11,8 @@ import {
 import { AuthContext } from '../App';
 import { authenticatedJsonFetch } from '../utils/api';
 import toast from 'react-hot-toast';
+import JSZip from 'jszip';
+import { saveAs } from 'file-saver';
 import Header from '../components/Header';
 
 export default function WhatsAppPage() {
@@ -37,6 +39,14 @@ export default function WhatsAppPage() {
     const [selectedDoc, setSelectedDoc] = useState(null);
 
     const [groupsTab, setGroupsTab] = useState('monitored'); // 'monitored' | 'all'
+    const [availableCompanies, setAvailableCompanies] = useState([]);
+    const [showCompanyModal, setShowCompanyModal] = useState(false);
+    const [pendingGroup, setPendingGroup] = useState(null);
+    const [isSubmittingMonitor, setIsSubmittingMonitor] = useState(false);
+
+    // ZIP Export States
+    const [pendingExportDocs, setPendingExportDocs] = useState([]);
+    const [isExporting, setIsExporting] = useState(false);
 
     // Determina etapa atual do stepper (3 etapas simples)
     const getCurrentStep = () => {
@@ -57,8 +67,9 @@ export default function WhatsAppPage() {
     );
 
     // Separa grupos monitorados dos demais
-    const monitoredGroupsList = filteredGroups.filter(g => monitoredGroups.includes(g.jid));
-    const otherGroupsList = filteredGroups.filter(g => !monitoredGroups.includes(g.jid));
+    const monitoredJids = monitoredGroups.map(g => g.group_jid);
+    const monitoredGroupsList = filteredGroups.filter(g => monitoredJids.includes(g.jid));
+    const otherGroupsList = filteredGroups.filter(g => !monitoredJids.includes(g.jid));
 
     // Carrega instância do usuário
     useEffect(() => {
@@ -75,7 +86,9 @@ export default function WhatsAppPage() {
         try {
             await Promise.all([
                 loadInstance(),
-                loadCredits()
+                loadCredits(),
+                loadCompanies(),
+                loadPendingExport()
             ]);
         } catch (error) {
             console.error('Erro ao carregar dados:', error);
@@ -105,6 +118,13 @@ export default function WhatsAppPage() {
         } catch (error) {
             console.error('Erro ao carregar créditos:', error);
         }
+    };
+
+    const handle401Error = () => {
+        toast.error('Erro de conexão: Suas credenciais podem estar expiradas. Por favor, limpe as credenciais e conecte novamente.', {
+            duration: 6000,
+            icon: '⚠️'
+        });
     };
 
     const handleLogout = async () => {
@@ -148,6 +168,12 @@ export default function WhatsAppPage() {
     const checkStatus = async (instanceId) => {
         try {
             const result = await authenticatedJsonFetch(`/api/whatsapp/status/${instanceId}`);
+
+            // Check for 401 or unauthorized in error message if the API returns it that way
+            if (result.error && (result.error.includes('401') || result.error.toLowerCase().includes('unauthorized'))) {
+                handle401Error();
+            }
+
             if (result.success) {
                 setStatus(result.data.status);
                 // Update instance data if phone number changed
@@ -162,6 +188,9 @@ export default function WhatsAppPage() {
                         loadMonitoredGroups(),
                         loadRecentDocs()
                     ]);
+                } else if (result.data.status === 'disconnected') {
+                    // Optionally alert user if it was connected before but now disconnected
+                    await loadQrCode(instanceId);
                 } else {
                     await loadQrCode(instanceId);
                 }
@@ -185,12 +214,104 @@ export default function WhatsAppPage() {
         }
     };
 
+    const loadCompanies = async () => {
+        try {
+            const result = await authenticatedJsonFetch('/api/system/companies');
+            if (result.success) {
+                setAvailableCompanies(result.data.companies || []);
+            }
+        } catch (error) {
+            console.error('Erro ao carregar empresas:', error);
+        }
+    };
+
+    const loadPendingExport = async () => {
+        try {
+            const result = await authenticatedJsonFetch('/api/analysis/pending-export');
+            if (result.success) {
+                setPendingExportDocs(result.data || []);
+            }
+        } catch (error) {
+            console.error('Erro ao carregar pendentes de exportação:', error);
+        }
+    };
+
+    const handleExportZip = async () => {
+        if (pendingExportDocs.length === 0) {
+            toast.error('Nenhum documento novo para exportar');
+            return;
+        }
+
+        setIsExporting(true);
+        const toastId = toast.loading('Gerando seu ZIP inteligente...');
+
+        try {
+            const zip = new JSZip();
+            const dateStr = new Date().toISOString().split('T')[0];
+            const rootFolder = zip.folder(`Exportacao_${dateStr}`);
+
+            // Agrupar por empresa
+            const docsByCompany = pendingExportDocs.reduce((acc, doc) => {
+                const companyName = doc.companies?.name || 'Sem Empresa';
+                if (!acc[companyName]) acc[companyName] = [];
+                acc[companyName].push(doc);
+                return acc;
+            }, {});
+
+            let processedCount = 0;
+
+            for (const [companyName, docs] of Object.entries(docsByCompany)) {
+                const companyFolder = rootFolder.folder(companyName);
+
+                for (const doc of docs) {
+                    try {
+                        // Baixar o arquivo
+                        const response = await fetch(doc.original_file_url);
+                        if (!response.ok) throw new Error('Falha ao baixar arquivo');
+                        const blob = await response.blob();
+
+                        // Determinar nome do arquivo
+                        const fileName = doc.suggested_file_name || doc.file_name || `documento_${doc.id}`;
+                        companyFolder.file(fileName, blob);
+                        processedCount++;
+                    } catch (err) {
+                        console.error(`Erro ao incluir arquivo ${doc.id} no ZIP:`, err);
+                    }
+                }
+            }
+
+            if (processedCount === 0) {
+                throw new Error('Nenhum arquivo pôde ser incluído no ZIP');
+            }
+
+            // Gerar e salvar
+            const content = await zip.generateAsync({ type: 'blob' });
+            saveAs(content, `Documentos_${dateStr}.zip`);
+
+            // Marcar como exportado no backend
+            const ids = pendingExportDocs.map(d => d.id);
+            await authenticatedJsonFetch('/api/analysis/mark-exported', {
+                method: 'POST',
+                body: JSON.stringify({ ids })
+            });
+
+            toast.success('ZIP baixado e arquivos marcados como exportados!', { id: toastId });
+            setPendingExportDocs([]);
+            await loadRecentDocs(); // Atualiza feed para refletir status (opcional se mostramos badge)
+        } catch (error) {
+            console.error('Erro na exportação ZIP:', error);
+            toast.error('Erro ao gerar exportação inteligente', { id: toastId });
+        } finally {
+            setIsExporting(false);
+        }
+    };
+
     const loadMonitoredGroups = async () => {
         try {
             const result = await authenticatedJsonFetch('/api/whatsapp/monitored-groups');
             if (result.success) {
                 const monitored = result.data.groups || [];
-                setMonitoredGroups(monitored.map(g => g.group_jid));
+                setMonitoredGroups(monitored);
                 setStats(prev => ({ ...prev, groups: monitored.length }));
             }
         } catch (error) {
@@ -229,35 +350,58 @@ export default function WhatsAppPage() {
     }, [feedFilter]);
 
     const toggleMonitor = async (group, active) => {
+        if (!active) {
+            // Desativar é simples
+            return executeToggleMonitor(group, false);
+        }
+
+        // Ativar requer escolha da empresa
+        setPendingGroup(group);
+        setShowCompanyModal(true);
+    };
+
+    const executeToggleMonitor = async (group, active, companyId = null) => {
+        setIsSubmittingMonitor(true);
         try {
+            const payload = {
+                instanceId: instance.instance_id,
+                groupJid: group.jid,
+                groupName: group.name,
+                active,
+            };
+
+            if (companyId) {
+                payload.companyId = companyId;
+            }
+
             const result = await authenticatedJsonFetch('/api/whatsapp/groups/monitor', {
                 method: 'POST',
-                body: JSON.stringify({
-                    instanceId: instance.instance_id,
-                    groupJid: group.jid,
-                    groupName: group.name,
-                    active,
-                }),
+                body: JSON.stringify(payload),
             });
 
             if (result.success) {
+                await loadMonitoredGroups();
                 if (active) {
-                    setMonitoredGroups(prev => [...prev, group.jid]);
-                    setStats(prev => ({ ...prev, groups: prev.groups + 1 }));
                     toast.success(`Monitorando: ${group.name}`);
                 } else {
-                    setMonitoredGroups(prev => prev.filter(jid => jid !== group.jid));
-                    setStats(prev => ({ ...prev, groups: Math.max(0, prev.groups - 1) }));
                     toast.success(`Parou de monitorar: ${group.name}`);
                 }
             }
         } catch (error) {
             toast.error('Erro ao configurar monitoramento');
+        } finally {
+            setIsSubmittingMonitor(false);
+            setShowCompanyModal(false);
+            setPendingGroup(null);
         }
     };
 
-    const deleteInstance = async () => {
-        if (!confirm('Tem certeza que deseja desconectar o WhatsApp?')) return;
+    const deleteInstance = async (isReset = false) => {
+        const message = isReset
+            ? 'Tem certeza que deseja limpar as credenciais? Isso removerá a conexão atual.'
+            : 'Tem certeza que deseja desconectar o WhatsApp?';
+
+        if (!confirm(message)) return;
 
         try {
             const result = await authenticatedJsonFetch(`/api/whatsapp/instance/${instance.instance_id}`, {
@@ -270,10 +414,10 @@ export default function WhatsAppPage() {
                 setStatus('disconnected');
                 setGroups([]);
                 setMonitoredGroups([]);
-                toast.success('WhatsApp desconectado');
+                toast.success(isReset ? 'Credenciais limpas' : 'WhatsApp desconectado');
             }
         } catch (error) {
-            toast.error('Erro ao desconectar');
+            toast.error(isReset ? 'Erro ao limpar credenciais' : 'Erro ao desconectar');
         }
     };
 
@@ -431,7 +575,7 @@ export default function WhatsAppPage() {
                                         )}
 
                                         {(instance || creatingInstance) && (
-                                            <div className="flex-1 flex flex-col items-center justify-center p-6 bg-white/5 rounded-[2rem] border border-white/10 backdrop-blur-md">
+                                            <div className="flex-1 flex flex-col items-center justify-center p-6 bg-white/5 rounded-[2rem] border border-white/10 backdrop-blur-md relative">
                                                 {qrCode ? (
                                                     <div className="bg-white p-4 rounded-3xl shadow-2xl">
                                                         <img
@@ -447,10 +591,20 @@ export default function WhatsAppPage() {
                                                 )}
                                                 <div className="mt-6 flex flex-col items-center">
                                                     <p className="text-light-100 font-bold text-sm mb-1 uppercase tracking-widest">Aguardando Leitura</p>
-                                                    <p className="text-dark-500 text-xs flex items-center gap-2">
+                                                    <p className="text-dark-500 text-xs flex items-center gap-2 mb-4">
                                                         <Smartphone className="w-3 h-3" />
                                                         WhatsApp &gt; Aparelhos Conectados &gt; Conectar um Aparelho
                                                     </p>
+
+                                                    {instance && (
+                                                        <button
+                                                            onClick={() => deleteInstance(true)}
+                                                            className="px-4 py-2 text-[10px] text-red-500/60 hover:text-red-500 hover:bg-red-500/5 rounded-lg transition-all flex items-center gap-2 font-bold uppercase tracking-widest border border-red-500/10"
+                                                        >
+                                                            <Trash2 className="w-3 h-3" />
+                                                            Limpar Credenciais
+                                                        </button>
+                                                    )}
                                                 </div>
                                             </div>
                                         )}
@@ -570,7 +724,7 @@ export default function WhatsAppPage() {
                                         ) : (
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                                 {(groupsTab === 'monitored' ? monitoredGroupsList : filteredGroups).map(group => {
-                                                    const isMonitored = monitoredGroups.includes(group.jid);
+                                                    const isMonitored = monitoredJids.includes(group.jid);
                                                     return (
                                                         <div
                                                             key={group.jid}
@@ -590,6 +744,11 @@ export default function WhatsAppPage() {
                                                                     <p className={`text-sm font-bold truncate ${isMonitored ? 'text-emerald-400' : 'text-light-100'}`}>
                                                                         {group.name}
                                                                     </p>
+                                                                    {isMonitored && (
+                                                                        <p className="text-[10px] text-emerald-500/70 font-bold uppercase tracking-widest truncate">
+                                                                            {monitoredGroups.find(mg => mg.group_jid === group.jid)?.companies?.name || 'Carregando...'}
+                                                                        </p>
+                                                                    )}
                                                                     <p className="text-[10px] text-dark-500 font-mono tracking-tighter truncate uppercase opacity-60">{group.jid.split('@')[0]}</p>
                                                                 </div>
                                                             </div>
@@ -645,9 +804,26 @@ export default function WhatsAppPage() {
                                                     <p className="text-dark-500 text-xs">Atividades da IA em tempo real</p>
                                                 </div>
                                             </div>
-                                            <button onClick={() => loadRecentDocs()} className="p-2.5 bg-dark-900/50 border border-dark-700 rounded-xl text-dark-500 hover:text-brand-blue transition-all">
-                                                <RefreshCw className="w-4 h-4" />
-                                            </button>
+
+                                            <div className="flex items-center gap-3">
+                                                {pendingExportDocs.length > 0 && (
+                                                    <button
+                                                        onClick={handleExportZip}
+                                                        disabled={isExporting}
+                                                        className="relative flex items-center gap-2 px-4 py-2 bg-brand-blue/10 hover:bg-brand-blue/20 border border-brand-blue/30 rounded-xl text-brand-blue transition-all group"
+                                                    >
+                                                        <Zap className={`w-4 h-4 ${isExporting ? 'animate-pulse' : ''}`} />
+                                                        <span className="text-[10px] font-black uppercase tracking-wider">Exportar {pendingExportDocs.length} novos</span>
+                                                        <span className="absolute -top-2 -right-2 w-5 h-5 bg-brand-blue text-white text-[10px] flex items-center justify-center rounded-full font-bold shadow-lg shadow-brand-blue/40 border border-dark-900 group-hover:scale-110 transition-transform">
+                                                            {pendingExportDocs.length}
+                                                        </span>
+                                                    </button>
+                                                )}
+
+                                                <button onClick={() => { loadRecentDocs(); loadPendingExport(); }} className="p-2.5 bg-dark-900/50 border border-dark-700 rounded-xl text-dark-500 hover:text-brand-blue transition-all">
+                                                    <RefreshCw className="w-4 h-4" />
+                                                </button>
+                                            </div>
                                         </div>
 
                                         {/* Feed Filters */}
@@ -696,8 +872,8 @@ export default function WhatsAppPage() {
 
                                                         <div className="flex-1 min-w-0">
                                                             <div className="flex items-start justify-between mb-1">
-                                                                <h4 className="text-sm font-bold text-light-100 truncate pr-4 group-hover:text-brand-blue transition-colors" title={doc.file_name}>
-                                                                    {doc.file_name || 'Documento sem nome'}
+                                                                <h4 className="text-sm font-bold text-light-100 truncate pr-4 group-hover:text-brand-blue transition-colors" title={doc.suggested_file_name || doc.file_name}>
+                                                                    {doc.suggested_file_name || doc.file_name || 'Documento sem nome'}
                                                                 </h4>
                                                                 <span className="text-[10px] text-dark-500 font-mono tracking-tighter opacity-70">
                                                                     {new Date(doc.created_at).toLocaleTimeString().slice(0, 5)}
@@ -705,7 +881,7 @@ export default function WhatsAppPage() {
                                                             </div>
                                                             <div className="flex flex-col gap-2">
                                                                 <p className="text-xs text-dark-500 font-medium truncate opacity-80">
-                                                                    Empresa: <span className="text-dark-300">{doc.company || 'Pendente'}</span>
+                                                                    Empresa: <span className="text-dark-300">{doc.companies?.name || doc.company || 'Pendente'}</span>
                                                                 </p>
 
                                                                 {/* Status Mini Bagde */}
@@ -752,7 +928,93 @@ export default function WhatsAppPage() {
                     <DocumentDetailsModal doc={selectedDoc} onClose={() => setSelectedDoc(null)} />
                 )}
             </AnimatePresence>
+
+            {/* Company Selection Modal */}
+            <AnimatePresence>
+                {showCompanyModal && (
+                    <CompanySelectionModal
+                        companies={availableCompanies}
+                        group={pendingGroup}
+                        onSelect={(companyId) => executeToggleMonitor(pendingGroup, true, companyId)}
+                        onClose={() => {
+                            setShowCompanyModal(false);
+                            setPendingGroup(null);
+                        }}
+                        loading={isSubmittingMonitor}
+                    />
+                )}
+            </AnimatePresence>
         </div>
+    );
+}
+
+function CompanySelectionModal({ companies, group, onSelect, onClose, loading }) {
+    const [selectedCompanyId, setSelectedCompanyId] = useState('');
+
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        if (selectedCompanyId) {
+            onSelect(selectedCompanyId);
+        }
+    };
+
+    return (
+        <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
+        >
+            <motion.div
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.9, opacity: 0 }}
+                className="bg-dark-800 border border-dark-600 rounded-[2rem] w-full max-w-md p-8 shadow-2xl"
+                onClick={e => e.stopPropagation()}
+            >
+                <div className="flex items-center justify-between mb-8">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-brand-blue/10 rounded-xl flex items-center justify-center border border-brand-blue/20">
+                            <Building2 className="w-5 h-5 text-brand-blue" />
+                        </div>
+                        <h3 className="text-xl font-bold text-light-100">Vincular Empresa</h3>
+                    </div>
+                    <button onClick={onClose} className="text-dark-500 hover:text-light-100 p-1">
+                        <X className="w-6 h-6" />
+                    </button>
+                </div>
+
+                <p className="text-dark-400 text-sm mb-6">
+                    Selecione a empresa que será responsável pelo processamento dos documentos do grupo <span className="text-brand-blue font-bold">"{group?.name}"</span>.
+                </p>
+
+                <form onSubmit={handleSubmit} className="space-y-6">
+                    <div className="space-y-2">
+                        <label className="text-[10px] text-dark-500 uppercase font-bold tracking-widest pl-1">Escolha uma empresa</label>
+                        <select
+                            value={selectedCompanyId}
+                            onChange={(e) => setSelectedCompanyId(e.target.value)}
+                            required
+                            className="w-full bg-dark-900 border border-dark-700 rounded-xl px-4 py-3.5 text-light-100 focus:outline-none focus:border-brand-blue transition-all"
+                        >
+                            <option value="">Selecione...</option>
+                            {companies.map(c => (
+                                <option key={c.id} value={c.id}>{c.name}</option>
+                            ))}
+                        </select>
+                    </div>
+
+                    <button
+                        type="submit"
+                        disabled={!selectedCompanyId || loading}
+                        className="w-full py-4 bg-brand-blue hover:bg-brand-blue-dark text-white font-bold rounded-xl flex items-center justify-center gap-2 transition-all disabled:opacity-50 shadow-lg shadow-brand-blue/20"
+                    >
+                        {loading && <Loader2 className="w-4 h-4 animate-spin" />}
+                        {loading ? 'Configurando...' : 'Confirmar Monitoramento'}
+                    </button>
+                </form>
+            </motion.div>
+        </motion.div>
     );
 }
 

@@ -110,11 +110,25 @@ export const getUserAnalyses = async (req, res) => {
 
         const limit = parseInt(req.query.limit) || 10;
         const offset = parseInt(req.query.offset) || 0;
-        const status = req.query.status; // 'completed', 'failed', 'processing'
+        const status = req.query.status;
 
         let query = supabaseAdmin
             .from('analysis_results')
-            .select('id, file_name, file_type, status, created_at, analysis_json, original_file_url', { count: 'exact' })
+            .select(`
+                id, 
+                file_name, 
+                file_type, 
+                status, 
+                created_at, 
+                analysis_json, 
+                original_file_url,
+                suggested_file_name,
+                company_id,
+                companies (
+                    id,
+                    name
+                )
+            `, { count: 'exact' })
             .eq('user_id', userId)
             .order('created_at', { ascending: false })
             .range(offset, offset + limit - 1);
@@ -126,8 +140,8 @@ export const getUserAnalyses = async (req, res) => {
         const { data: analyses, error, count } = await query;
 
         if (error) {
-            console.error('Erro ao buscar análises:', error);
-            // Fallback para analysis_logs se analysis_results falhar (retrocompatibilidade)
+            console.error('❌ Erro Supabase em getUserAnalyses:', error);
+            // Fallback para analysis_logs se analysis_results falhar
             return getUserAnalysesFromLogs(req, res);
         }
 
@@ -141,8 +155,12 @@ export const getUserAnalyses = async (req, res) => {
             }
         });
     } catch (error) {
-        console.error('Erro ao buscar análises do usuário:', error);
-        res.status(500).json({ success: false, error: 'Erro ao buscar análises' });
+        console.error('❌ Erro crítico em getUserAnalyses:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Erro ao buscar análises',
+            details: error.message
+        });
     }
 };
 
@@ -155,7 +173,7 @@ const getUserAnalysesFromLogs = async (req, res) => {
 
         const { data: analyses, error, count } = await supabaseAdmin
             .from('analysis_logs')
-            .select('id, file_name, analysis_type, success, created_at, company', { count: 'exact' })
+            .select('*', { count: 'exact' })
             .eq('user_id', userId)
             .order('created_at', { ascending: false })
             .range(offset, offset + limit - 1);
@@ -168,10 +186,12 @@ const getUserAnalysesFromLogs = async (req, res) => {
                 analyses: analyses || [],
                 total: count || 0,
                 limit,
-                offset
+                offset,
+                source: 'logs'
             }
         });
     } catch (e) {
+        console.error('❌ Erro no fallback getUserAnalysesFromLogs:', e);
         res.status(500).json({ success: false, error: 'Erro ao buscar análises (fallback)' });
     }
 }
@@ -221,5 +241,54 @@ export const getUserCredits = async (req, res) => {
     } catch (error) {
         console.error('Erro ao buscar créditos do usuário:', error);
         res.status(500).json({ success: false, error: 'Erro ao buscar créditos' });
+    }
+};
+
+export const getAnalysisById = async (req, res) => {
+    try {
+        const userId = req.user?.id;
+        const { id } = req.params;
+
+        if (!userId) {
+            return res.status(401).json({ success: false, error: 'Usuário não autenticado' });
+        }
+
+        if (!supabaseAdmin) {
+            return res.status(500).json({ success: false, error: 'Supabase não configurado' });
+        }
+
+        const { data: analysis, error } = await supabaseAdmin
+            .from('analysis_results')
+            .select(`
+                id, 
+                file_name, 
+                file_type, 
+                status, 
+                created_at, 
+                analysis_json, 
+                original_file_url,
+                suggested_file_name,
+                company_id,
+                companies (
+                    id,
+                    name
+                )
+            `)
+            .eq('id', id)
+            .eq('user_id', userId)
+            .single();
+
+        if (error) {
+            console.error('❌ Erro Supabase em getAnalysisById:', error);
+            return res.status(404).json({ success: false, error: 'Análise não encontrada' });
+        }
+
+        res.json({
+            success: true,
+            data: analysis
+        });
+    } catch (error) {
+        console.error('❌ Erro no controller getAnalysisById:', error);
+        res.status(500).json({ success: false, error: 'Erro interno do servidor' });
     }
 };

@@ -61,8 +61,7 @@ export default function UserDashboardPage() {
             description: 'Monitorar grupos e mensagens',
             icon: MessageSquare,
             color: 'emerald',
-            action: () => navigate('/whatsapp'),
-            hidden: !isMaster
+            action: () => navigate('/whatsapp')
         },
         {
             title: 'Google Drive',
@@ -266,8 +265,8 @@ export default function UserDashboardPage() {
                                                 onClick={() => navigate(`/analysis/${analysis.id}`)}
                                                 className="p-6 hover:bg-dark-900/50 transition-all flex items-center gap-6 cursor-pointer group"
                                             >
-                                                <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 border transition-all ${analysis.success === true ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-500 shadow-sm shadow-emerald-500/5' :
-                                                    analysis.success === false ? 'bg-red-500/10 border-red-500/20 text-red-500' :
+                                                <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 border transition-all ${analysis.status === 'completed' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-500 shadow-sm shadow-emerald-500/5' :
+                                                    analysis.status === 'failed' ? 'bg-red-500/10 border-red-500/20 text-red-500' :
                                                         'bg-amber-500/10 border-amber-500/20 text-amber-500 shadow-sm shadow-amber-500/5'
                                                     }`}>
                                                     {analysis.file_type?.includes('image') ? <Image className="w-7 h-7" /> : <FileText className="w-7 h-7" />}
@@ -275,26 +274,26 @@ export default function UserDashboardPage() {
 
                                                 <div className="flex-1 min-w-0">
                                                     <div className="flex items-center justify-between mb-1">
-                                                        <h4 className="text-md font-bold text-light-100 truncate pr-4 group-hover:text-brand-blue transition-colors">
-                                                            {analysis.file_name || 'Documento sem nome'}
+                                                        <h4 className="text-md font-bold text-light-100 truncate pr-4 group-hover:text-brand-blue transition-colors" title={analysis.suggested_file_name || analysis.file_name}>
+                                                            {analysis.suggested_file_name || analysis.file_name || 'Documento sem nome'}
                                                         </h4>
                                                         <span className="text-[10px] text-dark-500 font-mono font-bold whitespace-nowrap opacity-60">
                                                             {new Date(analysis.created_at).toLocaleTimeString().slice(0, 5)}
                                                         </span>
                                                     </div>
                                                     <div className="flex items-center gap-4">
-                                                        <p className="text-xs text-dark-500 font-medium">
-                                                            Tipo: <span className="text-dark-300">{analysis.analysis_type || 'WhatsApp'}</span>
+                                                        <p className="text-xs text-dark-500 font-medium whitespace-nowrap">
+                                                            Empresa: <span className="text-dark-300">{analysis.companies?.name || analysis.company || 'Pendente'}</span>
                                                         </p>
-                                                        <div className="w-1 h-1 bg-dark-600 rounded-full"></div>
-                                                        <div className={`flex items-center gap-1.5 text-[9px] font-black uppercase tracking-widest ${analysis.success === true ? 'text-emerald-500' :
-                                                            analysis.success === false ? 'text-red-500' : 'text-amber-500'
+                                                        <div className="w-1 h-1 bg-dark-600 rounded-full shrink-0"></div>
+                                                        <div className={`flex items-center gap-1.5 text-[9px] font-black uppercase tracking-widest ${analysis.status === 'completed' ? 'text-emerald-500' :
+                                                            analysis.status === 'failed' ? 'text-red-500' : 'text-amber-500'
                                                             }`}>
-                                                            {analysis.success === true ? <CheckCircle className="w-2.5 h-2.5" /> :
-                                                                analysis.success === false ? <AlertCircle className="w-2.5 h-2.5" /> :
+                                                            {analysis.status === 'completed' ? <CheckCircle className="w-2.5 h-2.5" /> :
+                                                                analysis.status === 'failed' ? <AlertCircle className="w-2.5 h-2.5" /> :
                                                                     <RefreshCw className="w-2.5 h-2.5 animate-spin" />}
-                                                            {analysis.success === true ? 'Processado' :
-                                                                analysis.success === false ? 'Falha' : 'Em andamento'}
+                                                            {analysis.status === 'completed' ? 'Processado' :
+                                                                analysis.status === 'failed' ? 'Falha' : 'Em andamento'}
                                                         </div>
                                                     </div>
                                                 </div>

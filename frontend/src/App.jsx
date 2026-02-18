@@ -35,6 +35,8 @@ const CompaniesPage = lazyWithRetry(() => import('./pages/CompaniesPage'))
 const NamingPatternsPage = lazyWithRetry(() => import('./pages/NamingPatternsPage'))
 const PermissionsPage = lazyWithRetry(() => import('./pages/PermissionsPage'))
 const UsersPage = lazyWithRetry(() => import('./pages/UsersPage'))
+const HistoryPage = lazyWithRetry(() => import('./pages/HistoryPage'))
+const AnalysisDetailsPage = lazyWithRetry(() => import('./pages/AnalysisDetailsPage'))
 
 // Componente de loading para Suspense
 const PageLoader = () => (
@@ -224,7 +226,7 @@ function App() {
                     <Route
                         path="/history"
                         element={
-                            isAuthenticated ? <div className="min-h-screen bg-dark-900 flex items-center justify-center text-light-100">Histórico - Em breve</div> : <Navigate to="/login" replace />
+                            isAuthenticated ? <HistoryPage /> : <Navigate to="/login" replace />
                         }
                     />
                     <Route
@@ -255,6 +257,12 @@ function App() {
                         path="/settings"
                         element={
                             isAuthenticated ? <div className="min-h-screen bg-dark-900 flex items-center justify-center text-light-100">Configurações - Em breve</div> : <Navigate to="/login" replace />
+                        }
+                    />
+                    <Route
+                        path="/analysis/:id"
+                        element={
+                            isAuthenticated ? <AnalysisDetailsPage /> : <Navigate to="/login" replace />
                         }
                     />
                     <Route

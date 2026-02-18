@@ -50,8 +50,8 @@ app.use(express.json({ limit: '50mb' })); // Limite aumentado para webhooks com 
 app.use('/uploads', express.static(path.join(__dirname, 'public', 'uploads')));
 
 // Rotas da API
-app.use('/api', systemRoutes);
-app.use('/api', analysisRoutes);
+app.use('/api/system', systemRoutes);
+app.use('/api/analysis', analysisRoutes);
 app.use('/api/admin', adminRoutes); // Rotas administrativas (master/admin only)
 app.use('/api/dashboard', dashboardRoutes); // Rotas do dashboard (master/admin only)
 app.use('/api/user', userRoutes); // Rotas do dashboard do usuário

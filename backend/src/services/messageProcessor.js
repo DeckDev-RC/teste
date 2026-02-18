@@ -3,6 +3,7 @@ import AIServiceFactory from './AIServiceFactory.js';
 import whatsappInternalService from './whatsappInternalService.js';
 import googleDriveService from './googleDriveService.js';
 import creditsService from './creditsService.js';
+import fileNameHelper from '../utils/fileNameHelper.js';
 import '../config/env.js';
 
 const supabaseUrl = process.env.SUPABASE_URL;
@@ -94,6 +95,7 @@ class MessageProcessor {
                 monitored_groups (
                     id,
                     company,
+                    company_id,
                     instance_id,
                     whatsapp_instances (
                         user_id,
@@ -210,34 +212,81 @@ class MessageProcessor {
             // 5. Envia para IA (Gemini)
             const aiService = AIServiceFactory.getService('gemini');
 
-            // Prompt padrão para análise
-            const prompt = `Analise este documento/imagem enviado via WhatsApp. 
+            // Busca configurações da empresa se houver company_id
+            let companyPrompts = null;
+            let namingPatterns = null;
+            if (msg.monitored_groups?.company_id) {
+                const { data: companyData } = await supabaseAdmin
+                    .from('companies')
+                    .select(`
+                        financial_receipt_prompt, 
+                        financial_payment_prompt,
+                        company_naming_patterns(
+                            priority,
+                            naming_patterns(pattern)
+                        )
+                    `)
+                    .eq('id', msg.monitored_groups.company_id)
+                    .single();
+
+                if (companyData) {
+                    companyPrompts = companyData;
+                    if (companyData.company_naming_patterns) {
+                        namingPatterns = companyData.company_naming_patterns
+                            .sort((a, b) => (a.priority || 0) - (b.priority || 0))
+                            .map(p => p.naming_patterns?.pattern)
+                            .filter(Boolean);
+                    }
+                }
+            }
+
+            // Define o prompt com base no tipo de arquivo e configurações da empresa
+            const isReceipt = msg.file_name?.toLowerCase().includes('comprovante') || msg.file_type?.includes('image');
+            const analysisType = isReceipt ? 'financial-receipt' : 'financial-payment';
+
+            let customPrompt = isReceipt
+                ? companyPrompts?.financial_receipt_prompt
+                : companyPrompts?.financial_payment_prompt;
+
+            // Prompt padrão para análise como fallback
+            const defaultPrompt = `Analise este documento/imagem enviado via WhatsApp. 
             Identifique o tipo de documento, extraia as informações principais (datas, valores, CNPJs, nomes) 
             e forneça um resumo conciso. 
             Se for uma nota fiscal ou boleto, extraia os dados para pagamento.`;
 
+            const prompt = (customPrompt && customPrompt.trim()) ? customPrompt : defaultPrompt;
+
+            console.log(`[MessageProcessor] Usando prompt ${customPrompt ? 'customizado da empresa' : 'padrão'} para a mensagem ${msg.id}`);
+
             // Realiza a análise
             const analysisResult = await aiService.analyzeImage(prompt, mediaResult.data.base64, mediaResult.data.mimetype);
+
+            // Gerar nome sugerido
+            const analysisText = typeof analysisResult === 'string' ? analysisResult : JSON.stringify(analysisResult);
+            const originalExtension = msg.file_name ? msg.file_name.substring(msg.file_name.lastIndexOf('.')) : '.png';
+            const suggestedFileName = fileNameHelper.generateFileNameFromAnalysis(analysisText, analysisType, originalExtension, namingPatterns);
 
             // 6. DEBIT: Cobra o crédito 
             await creditsService.debitCredit(userId, 1);
             console.log(`💰 1 Crédito debitado de ${userId}`);
 
             // 7. Salva resultado
-            const { data: analysisData, error: analysisError } = await supabaseAdmin
+            const { data: analysisData, error: insertError } = await supabaseAdmin
                 .from('analysis_results')
                 .insert({
                     user_id: userId,
+                    company_id: msg.monitored_groups?.company_id, // Vincula o resultado à empresa para rastreio
                     file_name: msg.file_name,
                     file_type: mediaResult.data.mimetype,
                     analysis_json: typeof analysisResult === 'string' ? { text: analysisResult } : analysisResult,
                     status: 'completed',
-                    original_file_url: fileUrl // Novo campo (precisará ser criado no BD se não existir, ou usamos drive_url como fallback)
+                    original_file_url: fileUrl, // Novo campo (precisará ser criado no BD se não existir, ou usamos drive_url como fallback)
+                    suggested_file_name: suggestedFileName
                 })
                 .select()
                 .single();
 
-            if (analysisError) throw analysisError;
+            if (insertError) throw insertError;
 
             // 8. Finaliza processamento
             await supabaseAdmin

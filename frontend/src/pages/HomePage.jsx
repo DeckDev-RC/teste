@@ -163,7 +163,7 @@ export default function HomePage() {
             // Buscar créditos do usuário autenticado (prioridade)
             if (user?.id) {
                 try {
-                    const creditsRes = await authenticatedFetch('/api/credits')
+                    const creditsRes = await authenticatedFetch('/api/system/credits')
                     const creditsData = await creditsRes.json()
                     if (creditsData.success && creditsData.data) {
                         const credits = creditsData.data
@@ -183,7 +183,7 @@ export default function HomePage() {
                 } catch (creditsError) {
                     console.warn('Erro ao buscar créditos do usuário, usando fallback:', creditsError)
                     // Fallback para stats global se falhar
-                    const statsRes = await fetch('/api/stats')
+                    const statsRes = await fetch('/api/system/stats')
                     const statsData = await statsRes.json()
                     if (statsData.success) {
                         setUsageStats(statsData.data.usage)
@@ -191,7 +191,7 @@ export default function HomePage() {
                 }
             } else {
                 // Se não autenticado, usar stats global
-                const statsRes = await fetch('/api/stats')
+                const statsRes = await fetch('/api/system/stats')
                 const statsData = await statsRes.json()
                 if (statsData.success) {
                     setUsageStats(statsData.data.usage)
@@ -199,7 +199,7 @@ export default function HomePage() {
             }
 
             // Fetch Companies
-            const compRes = await authenticatedFetch('/api/companies')
+            const compRes = await authenticatedFetch('/api/system/companies')
             const compData = await compRes.json()
             if (compData.success) {
                 const loadedCompanies = compData.data.companies.map(c => ({
@@ -214,7 +214,7 @@ export default function HomePage() {
             }
 
             // Fetch Providers
-            const provRes = await authenticatedFetch('/api/providers')
+            const provRes = await authenticatedFetch('/api/system/providers')
             const provData = await provRes.json()
             if (provData.success) {
                 const loadedProviders = provData.data.availableProviders.map(id => ({
@@ -299,7 +299,7 @@ export default function HomePage() {
                 formData.append('batchId', batchId)
 
                 // Usar authenticatedFetch para incluir token JWT
-                const response = await authenticatedFetch('/api/analyze', { method: 'POST', body: formData })
+                const response = await authenticatedFetch('/api/analysis/analyze', { method: 'POST', body: formData })
                 const data = await response.json()
 
                 processedCount++

@@ -218,10 +218,15 @@ class WhatsAppInternalService {
                 }
             } else if (connection === 'open') {
                 console.log('✅ Conexão aberta com sucesso!');
-                this.results.set(instanceId, { status: 'connected', qr: null });
 
                 // Atualiza status e número no banco
                 const phoneNumber = sock.user?.id?.split(':')[0]?.split('@')[0] || sock.user?.id?.split('@')[0];
+
+                this.results.set(instanceId, {
+                    status: 'connected',
+                    qr: null,
+                    phone_number: phoneNumber
+                });
                 const updateData = {
                     status: 'connected',
                     updated_at: new Date().toISOString()
@@ -309,7 +314,7 @@ class WhatsAppInternalService {
     }
 
     async getStatus(instanceId) {
-        return this.results.get(instanceId) || { status: 'disconnected', qr: null };
+        return this.results.get(instanceId) || { status: 'disconnected', qr: null, phone_number: null };
     }
 
     async getSocket(instanceId) {

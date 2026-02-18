@@ -134,8 +134,26 @@ export const getStatus = async (req, res) => {
             return res.status(400).json({ success: false, error: 'Instance ID obrigatório' });
         }
 
-        const status = await whatsappInternalService.getStatus(instanceId);
-        res.json({ success: true, data: status });
+        const statusResult = await whatsappInternalService.getStatus(instanceId);
+
+        // Se estiver conectado, garantir que temos os dados atualizados da instância
+        let instance = null;
+        if (supabaseAdmin) {
+            const { data } = await supabaseAdmin
+                .from('whatsapp_instances')
+                .select('*')
+                .eq('instance_id', instanceId)
+                .single();
+            instance = data;
+        }
+
+        res.json({
+            success: true,
+            data: {
+                ...statusResult,
+                instance
+            }
+        });
     } catch (error) {
         console.error('Erro ao verificar status:', error);
         res.status(500).json({ success: false, error: 'Erro ao verificar status' });
@@ -184,7 +202,7 @@ export const toggleGroupMonitor = async (req, res) => {
             return res.status(401).json({ success: false, error: 'Não autenticado' });
         }
 
-        const { instanceId, groupJid, groupName, active, company } = req.body;
+        const { instanceId, groupJid, groupName, active, company, companyId } = req.body;
 
         if (!instanceId || !groupJid) {
             return res.status(400).json({ success: false, error: 'Dados incompletos' });
@@ -209,6 +227,7 @@ export const toggleGroupMonitor = async (req, res) => {
                 group_jid: groupJid,
                 group_name: groupName,
                 company: company || 'default',
+                company_id: companyId || null,
                 active: true,
             }, { onConflict: 'instance_id,group_jid' });
 
@@ -216,7 +235,7 @@ export const toggleGroupMonitor = async (req, res) => {
                 console.error('[WhatsApp] Erro ao salvar grupo:', upsertError);
                 throw upsertError;
             }
-            console.log(`[WhatsApp] ✅ Grupo monitorado salvo: ${groupName}`);
+            console.log(`[WhatsApp] ✅ Grupo monitorado salvo: ${groupName} (Empresa ID: ${companyId})`);
         } else {
             // Desativar monitoramento
             await supabaseAdmin
@@ -248,7 +267,8 @@ export const getMonitoredGroups = async (req, res) => {
             .from('monitored_groups')
             .select(`
                 *,
-                whatsapp_instances!inner(user_id)
+                whatsapp_instances!inner(user_id),
+                companies(id, name)
             `)
             .eq('whatsapp_instances.user_id', userId)
             .eq('active', true);
