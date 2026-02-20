@@ -11,7 +11,7 @@ class CacheHelper {
     this.maxCacheSize = 100; // Número máximo de itens no cache
     this.cacheHits = 0;
     this.cacheMisses = 0;
-    this.enabled = true;
+    this.enabled = false; // Cache desabilitado conforme solicitação do usuário
   }
 
   /**
@@ -27,7 +27,7 @@ class CacheHelper {
       .createHash('sha256')
       .update(imageData)
       .digest('hex');
-    
+
     // Cria um hash resumido do prompt (apenas os primeiros 200 caracteres)
     // para diferenciar análises com prompts diferentes
     const promptSummary = prompt.substring(0, 200);
@@ -35,7 +35,7 @@ class CacheHelper {
       .createHash('md5')
       .update(promptSummary)
       .digest('hex');
-    
+
     // Combina os hashes com o tipo de análise
     return `${imageHash}_${promptHash}_${analysisType}`;
   }
@@ -53,18 +53,18 @@ class CacheHelper {
     }
 
     const cacheKey = this.generateCacheKey(imageData, prompt, analysisType);
-    
+
     if (this.imageCache.has(cacheKey)) {
       this.cacheHits++;
       const cachedItem = this.imageCache.get(cacheKey);
-      
+
       // Atualiza timestamp de acesso para LRU
       cachedItem.lastAccessed = Date.now();
-      
+
       console.log(`🎯 Cache hit! Usando resultado em cache para análise.`);
       return cachedItem.result;
     }
-    
+
     this.cacheMisses++;
     console.log(`📋 Cache miss. Processando nova análise.`);
     return null;
@@ -83,19 +83,19 @@ class CacheHelper {
     }
 
     const cacheKey = this.generateCacheKey(imageData, prompt, analysisType);
-    
+
     // Limpa cache se atingiu tamanho máximo (remove o item menos recentemente usado)
     if (this.imageCache.size >= this.maxCacheSize) {
       this.evictLeastRecentlyUsed();
     }
-    
+
     // Adiciona ao cache
     this.imageCache.set(cacheKey, {
       result,
       timestamp: Date.now(),
       lastAccessed: Date.now()
     });
-    
+
     console.log(`💾 Resultado armazenado em cache (${this.imageCache.size}/${this.maxCacheSize}).`);
   }
 
@@ -105,7 +105,7 @@ class CacheHelper {
   evictLeastRecentlyUsed() {
     let oldestKey = null;
     let oldestTimestamp = Infinity;
-    
+
     // Encontra o item menos recentemente acessado
     for (const [key, item] of this.imageCache.entries()) {
       if (item.lastAccessed < oldestTimestamp) {
@@ -113,7 +113,7 @@ class CacheHelper {
         oldestKey = key;
       }
     }
-    
+
     // Remove do cache
     if (oldestKey) {
       this.imageCache.delete(oldestKey);
@@ -139,8 +139,8 @@ class CacheHelper {
       maxSize: this.maxCacheSize,
       hits: this.cacheHits,
       misses: this.cacheMisses,
-      hitRate: this.cacheHits + this.cacheMisses > 0 
-        ? (this.cacheHits / (this.cacheHits + this.cacheMisses)).toFixed(2) 
+      hitRate: this.cacheHits + this.cacheMisses > 0
+        ? (this.cacheHits / (this.cacheHits + this.cacheMisses)).toFixed(2)
         : 0,
       enabled: this.enabled
     };

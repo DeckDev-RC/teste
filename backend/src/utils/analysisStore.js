@@ -44,10 +44,8 @@ class AnalysisStore {
    * @param {string} company - ID da empresa (para diferenciar prompts)
    */
   storeAnalysis(fileName, fileHash, analysisType, result, batchId = null, company = '') {
-    // Executa manutenção periódica
-    this.checkMaintenance();
-
-    const key = this.generateKey(fileName, fileHash, analysisType, company);
+    // Cache desabilitado conforme solicitação do usuário
+    return;
 
     // Se o store estiver muito cheio, remove a entrada mais antiga (FIFO simplificado)
     if (this.store.size >= this.MAX_STORE_SIZE && !this.store.has(key)) {
@@ -84,7 +82,8 @@ class AnalysisStore {
    * @returns {any|null} - Resultado da análise ou null se não encontrado
    */
   getAnalysis(fileName, fileHash, analysisType, company = '') {
-    const key = this.generateKey(fileName, fileHash, analysisType, company);
+    // Cache desabilitado conforme solicitação do usuário
+    return null;
 
     if (this.store.has(key)) {
       const entry = this.store.get(key);
